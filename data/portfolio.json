@@ -1,0 +1,26 @@
+{
+  "holdings": [
+    {
+      "symbol": "AAPL",
+      "share": 15000
+    },
+    {
+      "symbol": "GOOGL",
+      "share": 10000
+    },
+    {
+      "symbol": "TSLA",
+      "share": 5000
+    },
+    {
+      "symbol": "AMZN",
+      "share": 3000
+    }
+  ],
+  "target_percentages": {
+    "AAPL": 40,
+    "GOOGL": 30,
+    "TSLA": 20,
+    "AMZN": 10
+  }
+}

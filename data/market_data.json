@@ -1,0 +1,24 @@
+{
+	"asset_composition": {
+		"AAPL": {
+			"update_at": "2023-10-01",
+			"stock": 0.95,
+			"cash": 0.05
+		},
+		"GOOGL": {
+			"update_at": "2023-10-01",
+			"stock": 0.90,
+			"cash": 0.10
+		},
+		"TSLA": {
+			"update_at": "2023-10-01",
+			"stock": 0.85,
+			"cash": 0.15
+		},
+		"AMZN": {
+			"update_at": "2023-10-01",
+			"stock": 0.80,
+			"cash": 0.20
+		}
+	}
+}
