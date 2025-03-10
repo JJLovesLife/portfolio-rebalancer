@@ -29,3 +29,7 @@ class Portfolio:
 
     def target_percentages(self) -> dict[str, float]:
         return self.portfolio_data['target_percentages']
+
+    def update_target_percentages(self, target_percentages: dict[str, float]):
+        #todo
+        return
