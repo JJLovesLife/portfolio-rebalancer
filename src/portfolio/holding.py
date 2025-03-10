@@ -1,4 +1,4 @@
-from market_data.market_data import Market
+from market_data.market import Market
 
 class Holding:
 	"""

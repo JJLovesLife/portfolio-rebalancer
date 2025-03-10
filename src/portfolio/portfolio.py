@@ -1,7 +1,7 @@
 import os
 import json
 from portfolio.holding import Holding
-from market_data.market_data import Market
+from market_data.market import Market
 
 class Portfolio:
     def __init__(self, portfolio_file, market_data_path, logger):
@@ -16,15 +16,16 @@ class Portfolio:
             self.portfolio_data = json.load(f)
             self.holdings = [Holding(market=self.market, **holding) for holding in self.portfolio_data['holdings']]
 
-    def current_allocation(self):
-        total_value = self.total_value()
-        allocation = {holding.symbol: { 'value': holding.value, 'percentage': (holding.value / total_value) * 100 } for holding in self.holdings}
-        return allocation
+        self.total_value = sum(holding.value for holding in self.holdings)
 
-    def total_value(self):
-        if not hasattr(self, '_total_value'):
-            self._total_value = sum(holding.value for holding in self.holdings)
-        return self._total_value
+    def current_allocation(self):
+        allocation = {}
+        for holding in self.holdings:
+            for asset, pct in self.market.get_composition(holding.symbol).items():
+                if asset not in allocation:
+                    allocation[asset] = 0
+                allocation[asset] += holding.value * pct
+        return allocation
 
     def target_percentages(self) -> dict[str, float]:
         return self.portfolio_data['target_percentages']

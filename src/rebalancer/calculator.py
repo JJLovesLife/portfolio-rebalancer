@@ -22,12 +22,11 @@ class Calculator:
             Dict mapping asset classes to adjustment amounts (positive for buy, negative for sell)
         """
         current_allocation = self.portfolio.current_allocation()
-        total_value = self.portfolio.total_value()
         adjustments = {}
         
         # Calculate target values for each asset class
         for asset_class, target_pct in self.target_percentages.items():
-            target_value = total_value * (target_pct / 100)
+            target_value = self.portfolio.total_value * (target_pct / 100)
             current_value = current_allocation[asset_class]['value'] if asset_class in current_allocation else 0
             adjustment = target_value - current_value
             adjustments[asset_class] = round(adjustment, 2)
@@ -42,7 +41,7 @@ class Calculator:
             Dict containing current allocation, target allocation, and adjustments
         """
         current_allocation = self.portfolio.current_allocation()
-        total_value = self.portfolio.total_value()
+        total_value = self.portfolio.total_value
         adjustments = self.calculate_adjustments()
         
         summary = {
