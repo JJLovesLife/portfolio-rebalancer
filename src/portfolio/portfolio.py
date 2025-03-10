@@ -12,7 +12,7 @@ class Portfolio:
 
         self.market = Market(market_data_path, self.logger)
 
-        with open(portfolio_file, 'r') as f:
+        with open(portfolio_file, 'r', encoding='utf-8') as f:
             self.portfolio_data = json.load(f)
             self.holdings = [Holding(market=self.market, **holding) for holding in self.portfolio_data['holdings']]
 

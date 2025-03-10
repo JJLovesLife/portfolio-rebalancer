@@ -1,3 +1,6 @@
 /venv/
 /portfolio_rebalancer.log
 __pycache__/
+portfolio.json
+market_data.json
+/src/market_data/fetcher.*.py

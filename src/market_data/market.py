@@ -1,5 +1,6 @@
 import os
 import json
+from market_data import market_fetcher
 
 class Market:
     def __init__(self, market_data_file_path, logger):
@@ -10,7 +11,7 @@ class Market:
             self.logger.error(f"Market data file not found: {self.file_path}")
             return {}
 
-        with open(self.file_path, 'r') as f:
+        with open(self.file_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
 
         self.check()
@@ -21,7 +22,7 @@ class Market:
             self.logger.error("Market data is not available.")
             return
         # store back to file_path
-        with open(self.file_path, 'w') as f:
+        with open(self.file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f)
         self.logger.info(f"Market data updated successfully.")
 
@@ -52,6 +53,9 @@ class Market:
                 raise ValueError(f"Total percentage for symbol {symbol} is not equal to 1.")
 
     def get_price(self, symbol: str) -> float:
+        # todo: check update_at
+        if symbol in market_fetcher:
+            return market_fetcher[symbol].fetch_current_value()
         if symbol not in self.data:
             self.logger.error(f"Symbol {symbol} not found in market data.")
             raise ValueError(f"Symbol {symbol} not found in market data.")
