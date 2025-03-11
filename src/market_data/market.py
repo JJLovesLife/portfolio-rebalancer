@@ -1,5 +1,5 @@
 from decimal import Decimal
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
 import json
 import shutil
@@ -17,7 +17,15 @@ class Market:
 
         with open(self.file_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f, parse_float=Decimal)
-        self.init_data = { 'update_at': '0001-01-01', 'value': 0, 'composition': { 'update_at': '0001-01-01', 'unknown': 1 } }
+        self.init_data = {
+            'update_at': '0001-01-01',
+            'value': 0,
+            'kind': 'unknown',
+            'composition': {
+                'update_at': '0001-01-01',
+                'unknown': 1
+            }
+        }
         self.check()
 
     def update_market_data(self):
@@ -81,10 +89,17 @@ class Market:
         if update_at < date.today() and symbol in market_fetcher: #todo: remove second check
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
-                self.data[symbol]['value'] = market_fetcher[symbol].fetch_current_value()
-                composition_update_time = market_fetcher[symbol].fetch_composition_update_time()
-                if composition_update_time > datetime.strptime(self.data[symbol]['composition']['update_at'], '%Y-%m-%d').date():
-                    composition_str = input('The composition data has been updated. Please enter the new composition data: ')
+                self.data[symbol]['kind'] = market_fetcher[symbol].kind
+                self.data[symbol]['value'] = market_fetcher[symbol].fetch_current_value(self.logger)
+                composition_update_time = market_fetcher[symbol].fetch_composition_update_time(self.logger)
+                prev_update_time = datetime.strptime(self.data[symbol]['composition']['update_at'], '%Y-%m-%d').date()
+                if composition_update_time > prev_update_time or prev_update_time < date.today() - timedelta(days=30):
+                    if composition_update_time > prev_update_time:
+                        prompt = 'The composition data has been updated. Please enter the new composition data: '
+                    else:
+                        prompt = 'The composition data is older than 30 days. Please enter the new composition data: '
+
+                    composition_str = input(prompt)
                     composition = {}
                     composition_str = composition_str.replace('=', ':')
                     for asset in composition_str.split(';'):
