@@ -1,7 +1,8 @@
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, date
 import os
 import json
+import shutil
 import simplejson
 from market_data import market_fetcher
 
@@ -25,6 +26,15 @@ class Market:
         if not data:
             self.logger.error("Market data is not available.")
             return
+        if not getattr(self, 'history_saved', False):
+            # make sure .history folder is created
+            # save self.file_path to .history with timestamp
+            if not os.path.exists('.history'):
+                os.makedirs('.history')
+            history_file_path = os.path.join('.history', f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{os.path.basename(self.file_path)}")
+            # copy self.file_path to history_file_path, not json dump
+            shutil.copyfile(self.file_path, history_file_path)
+            self.history_saved = True
         # store back to file_path
         with open(self.file_path, 'w', encoding='utf-8') as f:
             simplejson.dump(data, f, ensure_ascii=False, indent='\t')
@@ -67,13 +77,13 @@ class Market:
     def get_symbol(self, symbol: str):
         if symbol not in self.data:
             self.data[symbol] = self.init_data.copy()
-        update_at = datetime.strptime(self.data[symbol]['update_at'], '%Y-%m-%d')
-        if update_at < datetime.today() and symbol in market_fetcher: #todo: remove second check
+        update_at = datetime.strptime(self.data[symbol]['update_at'], '%Y-%m-%d').date()
+        if update_at < date.today() and symbol in market_fetcher: #todo: remove second check
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
                 self.data[symbol]['value'] = market_fetcher[symbol].fetch_current_value()
                 composition_update_time = market_fetcher[symbol].fetch_composition_update_time()
-                if composition_update_time > datetime.strptime(self.data[symbol]['composition']['update_at'], '%Y-%m-%d'):
+                if composition_update_time > datetime.strptime(self.data[symbol]['composition']['update_at'], '%Y-%m-%d').date():
                     composition_str = input('The composition data has been updated. Please enter the new composition data: ')
                     composition = {}
                     composition_str = composition_str.replace('=', ':')
@@ -86,8 +96,8 @@ class Market:
                     if sum(composition.values()) < 1:
                         composition['cash'] = 1 - sum(composition.values())
                     self.data[symbol]['composition'] = composition
-                    self.data[symbol]['composition']['update_at'] = datetime.today().strftime('%Y-%m-%d')
-                self.data[symbol]['update_at'] = datetime.today().strftime('%Y-%m-%d')
+                    self.data[symbol]['composition']['update_at'] = date.today().strftime('%Y-%m-%d')
+                self.data[symbol]['update_at'] = date.today().strftime('%Y-%m-%d')
                 self.update_market_data()
             except Exception as e:
                 self.logger.error(f"Failed to fetch data for {symbol}: {e}")

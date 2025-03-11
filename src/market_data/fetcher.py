@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date
 
 class Fetcher(ABC):
     def __init__(self):
@@ -12,5 +12,5 @@ class Fetcher(ABC):
         pass
 
     @abstractmethod
-    def fetch_composition_update_time(self) -> datetime:
+    def fetch_composition_update_time(self) -> date:
         pass
