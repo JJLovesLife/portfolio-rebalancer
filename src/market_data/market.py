@@ -1,5 +1,8 @@
+from decimal import Decimal
+from datetime import datetime
 import os
 import json
+import simplejson
 from market_data import market_fetcher
 
 class Market:
@@ -12,22 +15,23 @@ class Market:
             return {}
 
         with open(self.file_path, 'r', encoding='utf-8') as f:
-            self.data = json.load(f)
-
+            self.data = json.load(f, parse_float=Decimal)
+        self.init_data = { 'update_at': '0001-01-01', 'value': 0, 'composition': { 'update_at': '0001-01-01', 'unknown': 1 } }
         self.check()
 
     def update_market_data(self):
+        self.check()
         data = self.data
         if not data:
             self.logger.error("Market data is not available.")
             return
         # store back to file_path
         with open(self.file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f)
+            simplejson.dump(data, f, ensure_ascii=False, indent='\t')
         self.logger.info(f"Market data updated successfully.")
 
     def check(self):
-        for symbol, info in self.data.items():
+        for symbol, info in {**{'unknown': self.init_data}, **self.data}.items():
             if 'value' not in info or 'update_at' not in info or 'composition' not in info:
                 self.logger.error(f"Missing property for symbol {symbol}.")
                 raise ValueError(f"Missing property for symbol {symbol}.")
@@ -41,7 +45,7 @@ class Market:
             for asset, percentage in composition.items():
                 if asset == 'update_at':
                     continue
-                if not isinstance(percentage, (int, float)):
+                if not isinstance(percentage, (int, Decimal)):
                     self.logger.error(f"Percentage for asset {asset} in symbol {symbol} is not a number.")
                     raise ValueError(f"Percentage for asset {asset} in symbol {symbol} is not a number.")
                 if percentage < 0 or percentage > 1:
@@ -53,19 +57,39 @@ class Market:
                 raise ValueError(f"Total percentage for symbol {symbol} is not equal to 1.")
 
     def get_price(self, symbol: str) -> float:
-        # todo: check update_at
-        if symbol in market_fetcher:
-            return market_fetcher[symbol].fetch_current_value()
-        if symbol not in self.data:
-            self.logger.error(f"Symbol {symbol} not found in market data.")
-            raise ValueError(f"Symbol {symbol} not found in market data.")
-        return self.data[symbol]['value']
+        return self.get_symbol(symbol)['value']
 
     def get_composition(self, symbol: str) -> dict[str, float]:
-        if symbol not in self.data:
-            self.logger.error(f"Symbol {symbol} not found in market data.")
-            raise ValueError(f"Symbol {symbol} not found in market data.")
-        #todo: check update_at
-        ret = self.data[symbol]['composition'].copy()
+        ret = self.get_symbol(symbol)['composition'].copy()
         del ret['update_at']
         return ret
+
+    def get_symbol(self, symbol: str):
+        if symbol not in self.data:
+            self.data[symbol] = self.init_data.copy()
+        update_at = datetime.strptime(self.data[symbol]['update_at'], '%Y-%m-%d')
+        if update_at < datetime.today() and symbol in market_fetcher: #todo: remove second check
+            self.logger.info(f"Fetching new data for {symbol}.")
+            try:
+                self.data[symbol]['value'] = market_fetcher[symbol].fetch_current_value()
+                composition_update_time = market_fetcher[symbol].fetch_composition_update_time()
+                if composition_update_time > datetime.strptime(self.data[symbol]['composition']['update_at'], '%Y-%m-%d'):
+                    composition_str = input('The composition data has been updated. Please enter the new composition data: ')
+                    composition = {}
+                    composition_str = composition_str.replace('=', ':')
+                    for asset in composition_str.split(';'):
+                        name, percentage = asset.split(':')
+                        composition[name] = Decimal(percentage)
+                    if sum(composition.values()) > 1:
+                        self.logger.error(f"Total percentage for symbol {symbol} is greater then 1.")
+                        raise ValueError(f"Total percentage for symbol {symbol} is greater then 1.")
+                    if sum(composition.values()) < 1:
+                        composition['cash'] = 1 - sum(composition.values())
+                    self.data[symbol]['composition'] = composition
+                    self.data[symbol]['composition']['update_at'] = datetime.today().strftime('%Y-%m-%d')
+                self.data[symbol]['update_at'] = datetime.today().strftime('%Y-%m-%d')
+                self.update_market_data()
+            except Exception as e:
+                self.logger.error(f"Failed to fetch data for {symbol}: {e}")
+                raise
+        return self.data[symbol]
