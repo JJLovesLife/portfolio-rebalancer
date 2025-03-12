@@ -57,16 +57,31 @@ class AllocationTab:
         # Insert data into treeview
         labels = []
         sizes = []
+        items = []
         for asset, value in allocation.items():
             percentage = value / self.portfolio.total_value * 100
-            self.allocation_tree.insert("", tk.END, values=(asset, f"{value:,.2f}", f"{percentage:.2f}%"))
+            items.append((asset, f"{value:,.2f}", f"{percentage:.2f}%"))
 
             labels.append(asset)
             sizes.append(percentage)
 
+        # sort labels and sizes by sizes desc
+        sorted_indices = sorted(range(len(sizes)), key=lambda i: sizes[i])
+        labels = [labels[i] for i in sorted_indices]
+        sizes = [sizes[i] for i in sorted_indices]
+
+        for i in sorted_indices:
+            self.allocation_tree.insert("", tk.END, values=items[i])
+
         # Update pie chart
         self.ax.clear()
-        self.ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        patches, texts, autotexts = self.ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
         self.ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
         self.ax.set_title('Portfolio Allocation')
+
+        # Add legend to the right of the pie chart
+        self.ax.legend(patches, labels, loc="center left", bbox_to_anchor=(1, 0.5))
+
+        # Adjust layout to make room for the legend
+        self.fig.tight_layout()
         self.canvas.draw()
