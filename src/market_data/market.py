@@ -3,13 +3,16 @@ from datetime import datetime, date, timedelta
 import os
 import json
 import shutil
+import time
 import simplejson
 from market_data import market_fetcher
+from market_data.FX import ExchangeRate
 
 class Market:
     def __init__(self, market_data_file_path, logger):
         self.logger = logger
         self.file_path = market_data_file_path
+        self.FX = ExchangeRate(self.logger)
 
         if not os.path.exists(self.file_path):
             self.logger.error(f"Market data file not found: {self.file_path}")
@@ -47,9 +50,10 @@ class Market:
         with open(self.file_path, 'w', encoding='utf-8') as f:
             simplejson.dump(data, f, ensure_ascii=False, indent='\t')
         self.logger.info(f"Market data updated successfully.")
+        time.sleep(1)
 
     def check(self):
-        for symbol, info in {**{'unknown': self.init_data}, **self.data}.items():
+        for symbol, info in {**{'unknown': self.init_data}, **self.data['holdings']}.items():
             if 'value' not in info or 'update_at' not in info or 'composition' not in info:
                 self.logger.error(f"Missing property for symbol {symbol}.")
                 raise ValueError(f"Missing property for symbol {symbol}.")
@@ -74,47 +78,65 @@ class Market:
                 self.logger.error(f"Total percentage for symbol {symbol} is not equal to 1.")
                 raise ValueError(f"Total percentage for symbol {symbol} is not equal to 1.")
 
-    def get_price(self, symbol: str) -> float:
-        return self.get_symbol(symbol)['value']
-
-    def get_composition(self, symbol: str) -> dict[str, float]:
+    def get_composition(self, symbol: str) -> dict[str, Decimal]:
         ret = self.get_symbol(symbol)['composition'].copy()
         del ret['update_at']
         return ret
 
     def get_symbol(self, symbol: str):
-        if symbol not in self.data:
-            self.data[symbol] = self.init_data.copy()
-        update_at = datetime.strptime(self.data[symbol]['update_at'], '%Y-%m-%d').date()
+        holdings = self.data['holdings']
+        if symbol not in holdings:
+            holdings[symbol] = self.init_data.copy()
+        update_at = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d').date()
         if update_at < date.today() and symbol in market_fetcher: #todo: remove second check
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
-                self.data[symbol]['kind'] = market_fetcher[symbol].kind
-                self.data[symbol]['value'] = market_fetcher[symbol].fetch_current_value(self.logger)
-                composition_update_time = market_fetcher[symbol].fetch_composition_update_time(self.logger)
-                prev_update_time = datetime.strptime(self.data[symbol]['composition']['update_at'], '%Y-%m-%d').date()
-                if composition_update_time > prev_update_time or prev_update_time < date.today() - timedelta(days=30):
-                    if composition_update_time > prev_update_time:
-                        prompt = 'The composition data has been updated. Please enter the new composition data: '
-                    else:
-                        prompt = 'The composition data is older than 30 days. Please enter the new composition data: '
+                holdings[symbol]['kind'] = market_fetcher[symbol].kind
+                holdings[symbol]['value'] = market_fetcher[symbol].fetch_current_value(self.logger)
+                if market_fetcher[symbol].fixed_composition() is not None:
+                    holdings[symbol]['composition'] = market_fetcher[symbol].fixed_composition()
+                    holdings[symbol]['composition']['update_at'] = '0001-01-01'
+                else:
+                    composition_update_time = market_fetcher[symbol].fetch_composition_update_time(self.logger)
+                    prev_update_time = datetime.strptime(holdings[symbol]['composition']['update_at'], '%Y-%m-%d').date()
+                    if composition_update_time > prev_update_time or prev_update_time < date.today() - timedelta(days=30):
+                        if composition_update_time > prev_update_time:
+                            prompt = 'The composition data has been updated. Please enter the new composition data: '
+                        else:
+                            prompt = 'The composition data is older than 30 days. Please enter the new composition data: '
 
-                    composition_str = input(prompt)
-                    composition = {}
-                    composition_str = composition_str.replace('=', ':')
-                    for asset in composition_str.split(';'):
-                        name, percentage = asset.split(':')
-                        composition[name] = Decimal(percentage)
-                    if sum(composition.values()) > 1:
-                        self.logger.error(f"Total percentage for symbol {symbol} is greater then 1.")
-                        raise ValueError(f"Total percentage for symbol {symbol} is greater then 1.")
-                    if sum(composition.values()) < 1:
-                        composition['cash'] = 1 - sum(composition.values())
-                    self.data[symbol]['composition'] = composition
-                    self.data[symbol]['composition']['update_at'] = date.today().strftime('%Y-%m-%d')
-                self.data[symbol]['update_at'] = date.today().strftime('%Y-%m-%d')
+                        composition_str = input(prompt)
+                        composition = {}
+                        composition_str = composition_str.replace('=', ':')
+                        for asset in composition_str.split(';'):
+                            name, percentage = asset.split(':')
+                            composition[name] = Decimal(percentage)
+                        if sum(composition.values()) > 1:
+                            self.logger.error(f"Total percentage for symbol {symbol} is greater then 1.")
+                            raise ValueError(f"Total percentage for symbol {symbol} is greater then 1.")
+                        if sum(composition.values()) < 1:
+                            composition['cash'] = 1 - sum(composition.values())
+                        holdings[symbol]['composition'] = composition
+                        holdings[symbol]['composition']['update_at'] = date.today().strftime('%Y-%m-%d')
+                holdings[symbol]['update_at'] = date.today().strftime('%Y-%m-%d')
                 self.update_market_data()
             except Exception as e:
                 self.logger.error(f"Failed to fetch data for {symbol}: {e}")
                 raise
-        return self.data[symbol]
+        return holdings[symbol]
+
+    def get_price(self, symbol: str) -> Decimal:
+        value = self.get_symbol(symbol)['value']
+        if isinstance(value, Decimal):
+            return value
+        # split first character, and left
+        currency_symbol = value[0]
+        value = Decimal(value[1:])
+        for currency, info in self.data['exchange_rate'].items():
+            if info['symbol'] == currency_symbol:
+                if datetime.strptime(info['update_at'], '%Y-%m-%d').date() < date.today():
+                    info['rate'] = self.FX.get_exchange_rate(currency)
+                    info['update_at'] = date.today().strftime('%Y-%m-%d')
+                    self.update_market_data()
+                return value * info['rate']
+        raise ValueError(f"Unsupported currency: {currency}")

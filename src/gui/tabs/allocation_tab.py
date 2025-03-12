@@ -59,7 +59,7 @@ class AllocationTab:
         sizes = []
         for asset, value in allocation.items():
             percentage = value / self.portfolio.total_value * 100
-            self.allocation_tree.insert("", tk.END, values=(asset, f"${value:,.2f}", f"{percentage:.2f}%"))
+            self.allocation_tree.insert("", tk.END, values=(asset, f"{value:,.2f}", f"{percentage:.2f}%"))
 
             labels.append(asset)
             sizes.append(percentage)

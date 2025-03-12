@@ -5,7 +5,7 @@ def setup_logger(name):
 	logger.setLevel(logging.DEBUG)
 
 	# Create file handler which logs even debug messages
-	fh = logging.FileHandler('portfolio_rebalancer.log')
+	fh = logging.FileHandler('portfolio_rebalancer.log', encoding='utf-8')
 	fh.setLevel(logging.DEBUG)
 
 	# Create console handler with a higher log level

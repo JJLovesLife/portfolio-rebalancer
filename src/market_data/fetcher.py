@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import date
+from decimal import Decimal
 
 class Fetcher(ABC):
     def __init__(self, kind: str):
@@ -9,8 +10,11 @@ class Fetcher(ABC):
         self.kind = kind
 
     @abstractmethod
-    def fetch_current_value(self, logger) -> float:
+    def fetch_current_value(self, logger) -> Decimal | str:
         pass
+
+    def fixed_composition(self) -> dict[str, Decimal] | None:
+        return None
 
     @abstractmethod
     def fetch_composition_update_time(self, logger) -> date:

@@ -5,3 +5,4 @@ portfolio.json
 market_data.json
 /src/market_data/fetcher.*.py
 /.history/
+/src/market_data/FX.py

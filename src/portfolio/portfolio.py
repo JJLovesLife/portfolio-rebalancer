@@ -2,6 +2,7 @@ import os
 import json
 from portfolio.holding import Holding
 from market_data.market import Market
+from decimal import Decimal
 
 class Portfolio:
     def __init__(self, portfolio_file, market_data_path, logger):
@@ -13,7 +14,7 @@ class Portfolio:
         self.market = Market(market_data_path, self.logger)
 
         with open(portfolio_file, 'r', encoding='utf-8') as f:
-            self.portfolio_data = json.load(f)
+            self.portfolio_data = json.load(f, parse_float=Decimal)
             self.holdings = [Holding(market=self.market, **holding) for holding in self.portfolio_data['holdings']]
 
         self.total_value = sum(holding.value for holding in self.holdings)
