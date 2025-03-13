@@ -72,6 +72,7 @@ class AllocationTab:
 
         for i in sorted_indices:
             self.allocation_tree.insert("", tk.END, values=items[i])
+        self.allocation_tree.insert("", tk.END, values=("Total", f"{self.portfolio.total_value:,.2f}", "100.00%"))
 
         # Update pie chart
         self.ax.clear()

@@ -70,9 +70,6 @@ class Market:
                 if not isinstance(percentage, (int, Decimal)):
                     self.logger.error(f"Percentage for asset {asset} in symbol {symbol} is not a number.")
                     raise ValueError(f"Percentage for asset {asset} in symbol {symbol} is not a number.")
-                if percentage < 0 or percentage > 1:
-                    self.logger.error(f"Percentage for asset {asset} in symbol {symbol} is out of range [0, 1].")
-                    raise ValueError(f"Percentage for asset {asset} in symbol {symbol} is out of range [0, 1].")
             total_percentage = sum(percentage for asset, percentage in composition.items() if asset != 'update_at')
             if total_percentage != 1:
                 self.logger.error(f"Total percentage for symbol {symbol} is not equal to 1.")
@@ -123,10 +120,7 @@ class Market:
                         for asset in composition_str.split(';'):
                             name, percentage = asset.split(':')
                             composition[name] = Decimal(percentage)
-                        if sum(composition.values()) > 1:
-                            self.logger.error(f"Total percentage for symbol {symbol} is greater then 1.")
-                            raise ValueError(f"Total percentage for symbol {symbol} is greater then 1.")
-                        if sum(composition.values()) < 1:
+                        if sum(composition.values()) != 1:
                             composition['cash'] = 1 - sum(composition.values())
                         holdings[symbol]['composition'] = composition
                         holdings[symbol]['composition']['update_at'] = date.today().strftime('%Y-%m-%d')
