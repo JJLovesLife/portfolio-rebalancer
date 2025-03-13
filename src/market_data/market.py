@@ -79,8 +79,20 @@ class Market:
                 raise ValueError(f"Total percentage for symbol {symbol} is not equal to 1.")
 
     def get_composition(self, symbol: str) -> dict[str, Decimal]:
-        ret = self.get_symbol(symbol)['composition'].copy()
+        symbol_data = self.get_symbol(symbol)
+        ret = symbol_data['composition'].copy()
         del ret['update_at']
+        if symbol_data['kind'] == 'ETF联接':
+            # change the 'ETF' composition to its corresponding 'ETF' symbol's composition
+            etf_pct = ret['ETF']
+            del ret['ETF']
+            etf_composition = self.get_symbol(market_fetcher[symbol].ETF)['composition']
+            for asset, percentage in etf_composition.items():
+                if asset == 'update_at':
+                    continue
+                if asset not in ret:
+                    ret[asset] = 0
+                ret[asset] += percentage * etf_pct
         return ret
 
     def get_symbol(self, symbol: str):
@@ -123,11 +135,13 @@ class Market:
             except Exception as e:
                 self.logger.error(f"Failed to fetch data for {symbol}: {e}")
                 raise
+        if symbol not in market_fetcher:
+            self.logger.warning(f"{symbol} has no fetcher defined.")
         return holdings[symbol]
 
     def get_price(self, symbol: str) -> Decimal:
         value = self.get_symbol(symbol)['value']
-        if isinstance(value, Decimal):
+        if isinstance(value, Decimal) or isinstance(value, int):
             return value
         # split first character, and left
         currency_symbol = value[0]

@@ -19,3 +19,8 @@ class Fetcher(ABC):
     @abstractmethod
     def fetch_composition_update_time(self, logger) -> date:
         pass
+
+class ETF联接Fetcher(Fetcher):
+    def __init__(self, kind: str, source_ETF: str):
+        super().__init__(kind)
+        self.ETF = source_ETF

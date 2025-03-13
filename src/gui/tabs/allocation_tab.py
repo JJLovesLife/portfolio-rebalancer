@@ -65,7 +65,7 @@ class AllocationTab:
             labels.append(asset)
             sizes.append(percentage)
 
-        # sort labels and sizes by sizes desc
+        # sort labels and sizes by sizes asc
         sorted_indices = sorted(range(len(sizes)), key=lambda i: sizes[i])
         labels = [labels[i] for i in sorted_indices]
         sizes = [sizes[i] for i in sorted_indices]
@@ -76,11 +76,19 @@ class AllocationTab:
         # Update pie chart
         self.ax.clear()
         patches, texts, autotexts = self.ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
-        self.ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
-        self.ax.set_title('Portfolio Allocation')
 
-        # Add legend to the right of the pie chart
-        self.ax.legend(patches, labels, loc="center left", bbox_to_anchor=(1, 0.5))
+        # Set font properties that support Chinese characters
+        font_prop = {'family': 'Microsoft YaHei', 'size': 9}
+        for text in texts:
+            text.set_fontproperties(font_prop)
+        for autotext in autotexts:
+            autotext.set_fontproperties(font_prop)
+
+        self.ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
+        self.ax.set_title('Portfolio Allocation', fontproperties=font_prop)
+
+        # Add legend to the right of the pie chart with Unicode support
+        legend = self.ax.legend(patches, labels, loc="center left", bbox_to_anchor=(1, 0.5), prop=font_prop)
 
         # Adjust layout to make room for the legend
         self.fig.tight_layout()

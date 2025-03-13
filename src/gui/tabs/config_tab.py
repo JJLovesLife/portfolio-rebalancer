@@ -211,9 +211,24 @@ class ConfigurationTab:
 
         # Update pie chart
         self.config_ax.clear()
-        self.config_ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        patches, texts, autotexts = self.config_ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+
+        # Set font properties that support Chinese characters
+        font_prop = {'family': 'Microsoft YaHei', 'size': 9}
+        for text in texts:
+            text.set_fontproperties(font_prop)
+        for autotext in autotexts:
+            autotext.set_fontproperties(font_prop)
+
         self.config_ax.axis('equal')
-        self.config_ax.set_title('Target Allocation')
+        self.config_ax.set_title('Target Allocation', fontproperties=font_prop)
+
+        # Add legend to the right of the pie chart with Unicode support
+        legend = self.config_ax.legend(patches, labels, loc="center left", bbox_to_anchor=(1, 0.5), 
+                                     prop=font_prop)
+
+        # Adjust layout to make room for the legend
+        self.config_fig.tight_layout()
         self.config_canvas.draw()
 
     def save_target_allocations(self):
