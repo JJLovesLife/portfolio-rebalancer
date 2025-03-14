@@ -130,7 +130,11 @@ class Market:
                 self.logger.error(f"Failed to fetch data for {symbol}: {e}")
                 raise
         if symbol not in market_fetcher:
-            self.logger.warning(f"{symbol} has no fetcher defined.")
+            if not hasattr(self, 'warned'):
+                self.warned = set()
+            if symbol not in self.warned:
+                self.warned.add(symbol)
+                self.logger.warning(f"{symbol} has no fetcher defined.")
         return holdings[symbol]
 
     def get_price(self, symbol: str) -> Decimal:

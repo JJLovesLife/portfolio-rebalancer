@@ -89,7 +89,8 @@ class AllocationTab:
         self.ax.set_title('Portfolio Allocation', fontproperties=font_prop)
 
         # Add legend to the right of the pie chart with Unicode support
-        legend = self.ax.legend(patches, labels, loc="center left", bbox_to_anchor=(1, 0.5), prop=font_prop)
+        legend_labels = [f"{label} - {pct:.2f}%" for label, pct in zip(labels, sizes)]
+        legend = self.ax.legend(patches, legend_labels, loc="center left", bbox_to_anchor=(1, 0.5), prop=font_prop)
 
         # Adjust layout to make room for the legend
         self.fig.tight_layout()
