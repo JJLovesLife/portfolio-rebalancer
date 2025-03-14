@@ -191,8 +191,7 @@ class ConfigurationTab:
     def update_config_preview(self):
         """Update the pie chart preview based on current settings."""
         # Get data from treeview
-        labels = []
-        sizes = []
+        items_data = []
         total = 0
 
         for item in self.config_tree.get_children():
@@ -202,9 +201,20 @@ class ConfigurationTab:
             else:
                 percentage = float(percentage)
 
-            labels.append(asset)
-            sizes.append(percentage)
+            items_data.append((asset, percentage))
+            self.config_tree.delete(item)
             total += percentage
+
+        # Sort items alphabetically by asset name
+        items_data.sort(key=lambda x: (x[1], x[0]))
+
+        # Re-insert in sorted order
+        for asset, percentage in items_data:
+            self.config_tree.insert("", tk.END, values=(asset, f"{percentage:.2f}%"))
+
+        # Extract sorted labels and sizes
+        labels = [item[0] for item in items_data]
+        sizes = [item[1] for item in items_data]
 
         # Update total percentage display
         self.total_percentage_var.set(f"Total: {total:.2f}%")
