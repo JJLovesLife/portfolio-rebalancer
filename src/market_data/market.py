@@ -7,12 +7,14 @@ import time
 import simplejson
 from market_data import market_fetcher
 from market_data.FX import ExchangeRate
+from market_data.delay_update import DelayedUpdateError
 
 class Market:
     def __init__(self, market_data_file_path, logger):
         self.logger = logger
         self.file_path = market_data_file_path
         self.FX = ExchangeRate(self.logger)
+        self.update_delayed = set()
 
         if not os.path.exists(self.file_path):
             self.logger.error(f"Market data file not found: {self.file_path}")
@@ -97,7 +99,7 @@ class Market:
         if symbol not in holdings:
             holdings[symbol] = self.init_data.copy()
         update_at = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d').date()
-        if update_at < date.today() and symbol in market_fetcher: #todo: remove second check
+        if update_at < date.today() and symbol in market_fetcher and symbol not in self.update_delayed:
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
                 holdings[symbol]['kind'] = market_fetcher[symbol].kind
@@ -126,6 +128,9 @@ class Market:
                         holdings[symbol]['composition']['update_at'] = date.today().strftime('%Y-%m-%d')
                 holdings[symbol]['update_at'] = date.today().strftime('%Y-%m-%d')
                 self.update_market_data()
+            except DelayedUpdateError as e:
+                self.logger.info(f"Delayed update for {symbol}: {e}")
+                self.update_delayed.add(symbol)
             except Exception as e:
                 self.logger.error(f"Failed to fetch data for {symbol}: {e}")
                 raise
