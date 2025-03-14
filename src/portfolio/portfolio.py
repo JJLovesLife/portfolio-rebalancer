@@ -19,13 +19,20 @@ class Portfolio:
 
         self.total_value = sum(holding.value for holding in self.holdings)
 
-    def current_allocation(self):
+    def current_allocation(self, merge: bool = False) -> dict[str, Decimal]:
         allocation = {}
         for holding in self.holdings:
             for asset, pct in self.market.get_composition(holding.symbol).items():
                 if asset not in allocation:
                     allocation[asset] = 0
                 allocation[asset] += holding.value * pct
+        if merge:
+            for merge_from, merge_to in self.portfolio_data['merge'].items():
+                if merge_from in allocation:
+                    if merge_to not in allocation:
+                        allocation[merge_to] = 0
+                    allocation[merge_to] += allocation[merge_from]
+                    del allocation[merge_from]
         return allocation
 
     def target_percentages(self) -> dict[str, float]:

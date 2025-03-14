@@ -9,7 +9,12 @@ class AllocationTab:
         """Initialize the allocation tab."""
         self.parent = parent
         self.portfolio = portfolio
+        self.refreshing = False
+        self.merge_var = tk.BooleanVar(value=False)  # Initialize checkbox variable
         self.create_tab()
+        
+        # Bind to Configure event to refresh the view when window is resized
+        self.parent.bind("<Configure>", self.on_resize)
 
     def create_tab(self):
         """Create the current allocation tab with table and chart."""
@@ -19,6 +24,19 @@ class AllocationTab:
 
         right_frame = ttk.Frame(self.parent)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        # Add control panel at top of left frame
+        controls_frame = ttk.Frame(left_frame)
+        controls_frame.pack(side=tk.TOP, fill=tk.X, pady=(0, 5))
+
+        # Add merge checkbox with better description
+        merge_cb = ttk.Checkbutton(
+            controls_frame, 
+            text="Merge", 
+            variable=self.merge_var,
+            command=self.refresh_view
+        )
+        merge_cb.pack(side=tk.LEFT, padx=5)
 
         # Create table in left frame
         self.allocation_tree = ttk.Treeview(left_frame, columns=("Asset", "Value", "Percentage"), show="headings")
@@ -44,6 +62,14 @@ class AllocationTab:
 
         # Populate with data
         self.refresh_view()
+    
+    def on_resize(self, event):
+        """Handle window resize events"""
+        # Check if it's a significant resize (like maximizing)
+        # Only refresh when the parent widget size changes, not child widgets
+        if event.widget == self.parent:
+            # Add a small delay to avoid refreshing too often during resize
+            self.parent.after(50, self.refresh_view)
 
     def refresh_view(self):
         """Refresh the allocation view with current data."""
@@ -52,7 +78,7 @@ class AllocationTab:
             self.allocation_tree.delete(i)
 
         # Get current allocation
-        allocation = self.portfolio.current_allocation()
+        allocation = self.portfolio.current_allocation(merge=self.merge_var.get())
 
         # Insert data into treeview
         labels = []
