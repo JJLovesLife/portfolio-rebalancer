@@ -12,9 +12,6 @@ class AllocationTab:
         self.refreshing = False
         self.merge_var = tk.BooleanVar(value=False)  # Initialize checkbox variable
         self.create_tab()
-        
-        # Bind to Configure event to refresh the view when window is resized
-        self.parent.bind("<Configure>", self.on_resize)
 
     def create_tab(self):
         """Create the current allocation tab with table and chart."""
@@ -62,15 +59,6 @@ class AllocationTab:
 
         # Populate with data
         self.refresh_view()
-    
-    def on_resize(self, event):
-        """Handle window resize events"""
-        # Check if it's a significant resize (like maximizing)
-        # Only refresh when the parent widget size changes, not child widgets
-        if event.widget == self.parent:
-            # Add a small delay to avoid refreshing too often during resize
-            self.parent.after(50, self.refresh_view)
-
     def refresh_view(self):
         """Refresh the allocation view with current data."""
         # Clear existing data

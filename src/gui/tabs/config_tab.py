@@ -6,30 +6,21 @@ from portfolio.portfolio import Portfolio
 from rebalancer.calculator import Calculator
 
 class ConfigurationTab:
-    def __init__(self, parent, portfolio: Portfolio, calculator: Calculator, refresh_callback=None):
+    def __init__(self, parent, portfolio: Portfolio, calculator: Calculator):
         """Initialize the configuration tab."""
         self.parent = parent
         self.portfolio = portfolio
         self.calculator = calculator
-        self.refresh_callback = refresh_callback
         self.editing = False
         self.create_tab()
 
     def create_tab(self):
         """Create the configuration tab for target percentages."""
-        # Main container frame
-        main_frame = ttk.Frame(self.parent)
-        main_frame.pack(fill=tk.BOTH, expand=True)
-
-        # Top frame for treeview and chart
-        top_frame = ttk.Frame(main_frame)
-        top_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
         # Left and right frames inside top frame
-        left_frame = ttk.Frame(top_frame)
+        left_frame = ttk.Frame(self.parent)
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        right_frame = ttk.Frame(top_frame)
+        right_frame = ttk.Frame(self.parent)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Add a frame for the treeview and button
@@ -63,8 +54,8 @@ class ConfigurationTab:
         self.config_canvas = FigureCanvasTkAgg(self.config_fig, master=right_frame)
         self.config_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        # Bottom frame for buttons (will be below both treeview and chart)
-        btn_frame = ttk.Frame(main_frame)
+        # Bottom frame for buttons
+        btn_frame = ttk.Frame(left_frame)
         btn_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
 
         # Total percentage indicator on the left
@@ -94,7 +85,7 @@ class ConfigurationTab:
         save_btn.pack(side=tk.LEFT, padx=5)
 
         # Populate with data
-        self.refresh_view()
+        self.populate_data()
 
     def on_config_item_double_click(self, event):
         """Handle double-click on configuration item."""
@@ -146,7 +137,7 @@ class ConfigurationTab:
                     new_value = float(entry.get())
                     if 0 <= new_value <= 100:
                         self.config_tree.item(item, values=(asset, f"{new_value:.2f}%"))
-                        self.update_config_preview()
+                        self.refresh_view()
                         popup.destroy()
                         self.editing = False
                     else:
@@ -173,7 +164,7 @@ class ConfigurationTab:
             # Handle Escape key
             popup.bind("<Escape>", lambda event: cancel())
 
-    def refresh_view(self):
+    def populate_data(self):
         """Refresh the configuration view with current data."""
         # Clear existing data
         for i in self.config_tree.get_children():
@@ -186,9 +177,9 @@ class ConfigurationTab:
         for asset, percentage in target_pcts.items():
             self.config_tree.insert("", tk.END, values=(asset, f"{percentage:.2f}%"))
 
-        self.update_config_preview()
+        self.refresh_view()
 
-    def update_config_preview(self):
+    def refresh_view(self):
         """Update the pie chart preview based on current settings."""
         # Get data from treeview
         items_data = []
@@ -234,7 +225,8 @@ class ConfigurationTab:
         self.config_ax.set_title('Target Allocation', fontproperties=font_prop)
 
         # Add legend to the right of the pie chart with Unicode support
-        legend = self.config_ax.legend(patches, labels, loc="center left", bbox_to_anchor=(1, 0.5), 
+        legend_labels = [f"{label} - {pct:.2f}%" for label, pct in zip(labels, sizes)]
+        legend = self.config_ax.legend(patches, legend_labels, loc="center left", bbox_to_anchor=(1, 0.5), 
                                      prop=font_prop)
 
         # Adjust layout to make room for the legend
@@ -285,10 +277,6 @@ class ConfigurationTab:
             self.calculator = Calculator(self.portfolio, new_targets)
 
             messagebox.showinfo("Success", "Target allocations updated successfully.")
-
-            # Call refresh callback if provided
-            if self.refresh_callback:
-                self.refresh_callback()
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save target allocations: {str(e)}")
@@ -353,7 +341,7 @@ class ConfigurationTab:
 
                 # Add to treeview
                 self.config_tree.insert("", tk.END, values=(asset_name, f"{percentage:.2f}%"))
-                self.update_config_preview()
+                self.refresh_view()
                 popup.destroy()
 
             except ValueError:
