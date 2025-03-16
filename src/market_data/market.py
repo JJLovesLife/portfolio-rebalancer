@@ -142,6 +142,10 @@ class Market:
                 self.logger.warning(f"{symbol} has no fetcher defined.")
         return holdings[symbol]
 
+    def iter_symbols(self):
+        for symbol in self.data['holdings']:
+            yield symbol, self.get_symbol(symbol)
+
     def get_price(self, symbol: str) -> Decimal:
         value = self.get_symbol(symbol)['value']
         if isinstance(value, Decimal) or isinstance(value, int):

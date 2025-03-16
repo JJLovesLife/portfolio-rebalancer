@@ -3,14 +3,13 @@ from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from portfolio.portfolio import Portfolio
-from rebalancer.calculator import Calculator
+from decimal import Decimal
 
 class ConfigurationTab:
-    def __init__(self, parent, portfolio: Portfolio, calculator: Calculator):
+    def __init__(self, parent, portfolio: Portfolio):
         """Initialize the configuration tab."""
         self.parent = parent
         self.portfolio = portfolio
-        self.calculator = calculator
         self.editing = False
         self.create_tab()
 
@@ -134,7 +133,7 @@ class ConfigurationTab:
 
             def save_value():
                 try:
-                    new_value = float(entry.get())
+                    new_value = Decimal(entry.get())
                     if 0 <= new_value <= 100:
                         self.config_tree.item(item, values=(asset, f"{new_value:.2f}%"))
                         self.refresh_view()
@@ -188,9 +187,9 @@ class ConfigurationTab:
         for item in self.config_tree.get_children():
             asset, percentage = self.config_tree.item(item, "values")
             if percentage.endswith('%'):
-                percentage = float(percentage[:-1])
+                percentage = Decimal(percentage[:-1])
             else:
-                percentage = float(percentage)
+                percentage = Decimal(percentage)
 
             items_data.append((asset, percentage))
             self.config_tree.delete(item)
@@ -243,11 +242,11 @@ class ConfigurationTab:
             for item in self.config_tree.get_children():
                 asset, percentage = self.config_tree.item(item, "values")
                 if percentage.endswith('%'):
-                    percentage = float(percentage[:-1])
+                    percentage = Decimal(percentage[:-1])
                 else:
-                    percentage = float(percentage)
+                    percentage = Decimal(percentage)
 
-                new_targets[asset] = percentage / 100  # Convert to decimal
+                new_targets[asset] = percentage
                 total += percentage
 
             # Validate total is close to 100%
@@ -255,26 +254,8 @@ class ConfigurationTab:
                 messagebox.showerror("Invalid Allocation", f"Total allocation must be 100%. Current total: {total:.2f}%")
                 return
 
-            # Get rebalance duration
-            try:
-                duration_value = int(self.duration_value.get())
-                if duration_value <= 0:
-                    messagebox.showerror("Invalid Duration", "Duration must be a positive number")
-                    return
-                duration_unit = self.duration_unit.get()
-            except ValueError:
-                messagebox.showerror("Invalid Duration", "Duration must be a valid number")
-                return
-
-            # Store duration information
-            self.rebalance_duration = {
-                'value': duration_value,
-                'unit': duration_unit
-            }
-
             # Update portfolio targets
             self.portfolio.update_target_percentages(new_targets)
-            self.calculator = Calculator(self.portfolio, new_targets)
 
             messagebox.showinfo("Success", "Target allocations updated successfully.")
 
@@ -334,7 +315,7 @@ class ConfigurationTab:
                     return
 
             try:
-                percentage = float(pct_entry.get())
+                percentage = Decimal(pct_entry.get())
                 if percentage < 0 or percentage > 100:
                     messagebox.showerror("Invalid Percentage", "Percentage must be between 0 and 100.")
                     return
@@ -360,3 +341,22 @@ class ConfigurationTab:
         popup.bind("<Return>", lambda event: save_asset())
         # Handle Escape key
         popup.bind("<Escape>", lambda event: cancel())
+
+    def get_rebalance_duration(self):
+        """Get the rebalance duration."""
+        try:
+            duration_value = Decimal(self.duration_value.get())
+            if duration_value <= 0:
+                messagebox.showerror("Invalid Duration", "Duration must be a positive number")
+                return
+            duration_unit = self.duration_unit.get()
+            if duration_unit == 'day' and duration_value != duration_value.to_integral_value():
+                messagebox.showerror("Invalid Duration", "Duration in days must be an integer")
+        except ValueError:
+            messagebox.showerror("Invalid Duration", "Duration must be a valid number")
+            return
+
+        return {
+            'value': duration_value,
+            'unit': duration_unit
+        }

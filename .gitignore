@@ -3,6 +3,7 @@
 __pycache__/
 portfolio.json
 market_data.json
-/src/market_data/fetcher.*.py
-/.history/
 /src/market_data/FX.py
+/src/market_data/fetcher.*.py
+/src/rebalancer/calculator.*.py
+/.history/

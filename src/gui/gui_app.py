@@ -1,18 +1,15 @@
 import tkinter as tk
 from tkinter import ttk
 from portfolio.portfolio import Portfolio
-from rebalancer.calculator import Calculator
 from gui.tabs.allocation_tab import AllocationTab
 from gui.tabs.config_tab import ConfigurationTab
-# Uncomment when implemented
-# from gui.tabs.adjustments_tab import AdjustmentsTab
+from gui.tabs.adjustments_tab import AdjustmentsTab
 
 class PortfolioRebalancerGUI:
     def __init__(self, root, portfolio: Portfolio):
         """Initialize the GUI application."""
         self.root = root
         self.portfolio = portfolio
-        self.calculator = Calculator(portfolio, portfolio.target_percentages())
 
         self.root.title("Portfolio Rebalancer")
         self.root.geometry("900x600")
@@ -23,7 +20,7 @@ class PortfolioRebalancerGUI:
         self.root.bind("<Configure>", self.on_window_configure)
 
         self.setup_ui()
-        
+
     def on_window_configure(self, event):
         """Handle window configure events to detect window state changes."""
         # Get current window state
@@ -31,16 +28,16 @@ class PortfolioRebalancerGUI:
 
         # If state changed from normal to zoomed (maximized)
         if current_state == 'zoomed' and self.window_state != 'zoomed':
-            self.refresh_current_tab()
-            
+            self.refresh_current_tab(resize=True)
+
         # If state changed from zoomed (maximized) to normal
         elif current_state != 'zoomed' and self.window_state == 'zoomed':
-            self.refresh_current_tab()
+            self.refresh_current_tab(resize=True)
 
         # Update the saved state
         self.window_state = current_state
 
-    def refresh_current_tab(self, event=None):
+    def refresh_current_tab(self, event=None, resize=False):
         """Refresh only the currently active tab."""
         current_tab_index = self.notebook.index(self.notebook.select())
 
@@ -48,9 +45,8 @@ class PortfolioRebalancerGUI:
             self.root.after(75, self.allocation_tab.refresh_view)
         elif current_tab_index == 1:  # Configuration tab
             self.root.after(75, self.config_tab.refresh_view)
-        # Uncomment when adjustments tab is implemented
-        # elif current_tab_index == 2:  # Adjustments tab
-        #     self.adjustments_tab.refresh_view()
+        elif not resize and current_tab_index == 2:  # no need to refresh when size for Adjustments tab
+            self.adjustments_tab.refresh_view()
 
     def setup_ui(self):
         """Set up the user interface."""
@@ -70,13 +66,11 @@ class PortfolioRebalancerGUI:
         config_frame = ttk.Frame(self.notebook)
         self.notebook.add(config_frame, text="Configuration")
         self.config_tab = ConfigurationTab(
-            config_frame, 
-            self.portfolio, 
-            self.calculator
+            config_frame,
+            self.portfolio
         )
 
-        # Uncomment when adjustments tab is implemented
         # Create adjustments tab
-        # adjustments_frame = ttk.Frame(self.notebook)
-        # self.notebook.add(adjustments_frame, text="Rebalancing Adjustments")
-        # self.adjustments_tab = AdjustmentsTab(adjustments_frame, self.portfolio, self.calculator)
+        adjustments_frame = ttk.Frame(self.notebook)
+        self.notebook.add(adjustments_frame, text="Rebalancing Adjustments")
+        self.adjustments_tab = AdjustmentsTab(adjustments_frame, self.portfolio, self.config_tab.get_rebalance_duration)

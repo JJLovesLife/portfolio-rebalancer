@@ -1,14 +1,15 @@
+from decimal import Decimal
 import tkinter as tk
 from tkinter import ttk, messagebox
 from portfolio.portfolio import Portfolio
-from rebalancer.calculator import Calculator
+from rebalancer.calculator import CreateCalculator
 
 class AdjustmentsTab:
-    def __init__(self, parent, portfolio: Portfolio, calculator: Calculator):
+    def __init__(self, parent, portfolio: Portfolio, get_rebalance_duration):
         """Initialize the adjustments tab."""
         self.parent = parent
         self.portfolio = portfolio
-        self.calculator = calculator
+        self.get_rebalance_duration = get_rebalance_duration
         self.create_tab()
 
     def create_tab(self):
@@ -44,17 +45,27 @@ class AdjustmentsTab:
         self.adjustments_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Populate with data
-        self.refresh_view()
-
     def refresh_view(self):
         """Refresh the adjustments view with current data."""
         # Clear existing data
         for i in self.adjustments_tree.get_children():
             self.adjustments_tree.delete(i)
 
+        rebalance_duration = self.get_rebalance_duration()
+        valid_rebalance_duration = True
+        if not isinstance(rebalance_duration, dict):
+            valid_rebalance_duration = False
+        elif 'unit' not in rebalance_duration or rebalance_duration['unit'] not in ['day', 'month']:
+            valid_rebalance_duration = False
+        elif 'value' not in rebalance_duration or (not isinstance(rebalance_duration['value'], int) and not isinstance(rebalance_duration['value'], Decimal)):
+            valid_rebalance_duration = False
+
+        if not valid_rebalance_duration:
+            self.adjustments_tree.insert("", tk.END, values=("Invalid Rebalance Duration", "", "", "", ""))
+            return
+
         # Get adjustments data
-        adjustments = self.calculator.calculate_adjustments()
+        adjustments = CreateCalculator(self.portfolio, 'standard').calculate_adjustments(rebalance_duration)
 
         current_pcts = self.portfolio.current_allocation()
         target_pcts = self.portfolio.target_percentages()
@@ -62,15 +73,24 @@ class AdjustmentsTab:
         # Insert data into treeview
         for asset, amount in adjustments.items():
             current_pct = current_pcts[asset] / self.portfolio.total_value * 100 if asset in current_pcts else 0
-            target_pct = target_pcts.get(asset, 0) * 100  # Convert from decimal to percentage
-            action = "Buy" if amount > 0 else "Sell" if amount < 0 else "No Change"
+            target_pct = target_pcts.get(asset, 0)
+            rebalance_granularity = 'day' if rebalance_duration['unit'] == 'day' else 'week'
+            if rebalance_duration['unit'] == 'day':
+                amount_per_granularity = amount / rebalance_duration['value']
+            else:
+                amount_per_granularity = amount / rebalance_duration['value'] / (Decimal(365) / 7 / 12)
+
+            if asset == 'cash':
+                action  = "save" if amount > 0 else "spend" if amount < 0 else "No Change"
+            else:
+                action = "Buy" if amount > 0 else "Sell" if amount < 0 else "No Change"
 
             self.adjustments_tree.insert("", tk.END, values=(
                 asset, 
                 f"{current_pct:.2f}%", 
                 f"{target_pct:.2f}%", 
-                f"${abs(amount):,.2f}", 
-                f"{action} ${abs(amount):,.2f}"
+                f"{amount:,.2f}", 
+                f"{action} {abs(amount_per_granularity):,.2f} per {rebalance_granularity}"
             ))
 
     def export_report(self):
