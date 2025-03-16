@@ -67,7 +67,7 @@ class AdjustmentsTab:
         # Get adjustments data
         adjustments = CreateCalculator(self.portfolio, 'standard').calculate_adjustments(rebalance_duration)
 
-        current_pcts = self.portfolio.current_allocation()
+        current_pcts = self.portfolio.current_allocation(merge=True)
         target_pcts = self.portfolio.target_percentages()
 
         # Insert data into treeview
@@ -96,29 +96,96 @@ class AdjustmentsTab:
     def export_report(self):
         """Export the rebalancing report to a file."""
         try:
-            # Get adjustments
-            adjustments = self.calculator.calculate_adjustments()
+            rebalance_duration = self.get_rebalance_duration()
+            valid_rebalance_duration = True
+            if not isinstance(rebalance_duration, dict):
+                valid_rebalance_duration = False
+            elif 'unit' not in rebalance_duration or rebalance_duration['unit'] not in ['day', 'month']:
+                valid_rebalance_duration = False
+            elif 'value' not in rebalance_duration or (not isinstance(rebalance_duration['value'], int) and not isinstance(rebalance_duration['value'], Decimal)):
+                valid_rebalance_duration = False
+                
+            if not valid_rebalance_duration:
+                messagebox.showerror("Export Error", "Invalid rebalance duration")
+                return
+                
+            # Get adjustments using CreateCalculator like in refresh_view
+            adjustments = CreateCalculator(self.portfolio, 'standard').calculate_adjustments(rebalance_duration)
+            current_allocation = self.portfolio.current_allocation(merge=True)
+            target_percentages = self.portfolio.target_percentages()
+            total_value = self.portfolio.total_value
 
             # Create a simple report
             report = "Portfolio Rebalancing Report\n"
             report += "============================\n\n"
 
-            report += "Current Allocation:\n"
-            allocation = self.portfolio.current_allocation()
-            for asset, value in allocation.items():
-                report += f"  {asset}: ${value:,.2f} ({value / self.portfolio.total_value * 100:.2f}%)\n"
+            report += "Current vs Target Allocation:\n"
+            report += "-----------------------------\n"
+            
+            # Get all unique assets from both current and target allocations
+            all_assets = set(list(current_allocation.keys()) + list(target_percentages.keys()))
+            
+            # Create formatted allocation comparison table
+            report += f"{'Asset':<15} {'Current Value':<15} {'Current %':<10} {'Target %':<10} {'Difference':<10}\n"
+            
+            for asset in sorted(all_assets):
+                current_value = current_allocation.get(asset, 0)
+                current_pct = current_value / total_value * 100 if total_value > 0 else 0
+                target_pct = target_percentages.get(asset, 0)
+                pct_diff = current_pct - target_pct
+                
+                report += f"{asset:<15} {current_value:,.2f}".ljust(31)
+                report += f"{current_pct:.2f}%".ljust(11)
+                report += f"{target_pct:.2f}%".ljust(11)
+                report += f"{pct_diff:+.2f}%\n"
 
             report += "\nAdjustments Needed:\n"
+            report += "------------------\n"
             for asset, amount in adjustments.items():
-                action = "Buy" if amount > 0 else "Sell" if amount < 0 else "No Change"
+                if asset == 'cash':
+                    action = "Save" if amount > 0 else "Spend" if amount < 0 else "No Change"
+                else:
+                    action = "Buy" if amount > 0 else "Sell" if amount < 0 else "No Change"
                 amount_abs = abs(amount)
-                report += f"  {asset}: {action} ${amount_abs:,.2f}\n"
+                report += f"  {asset}: {action} {amount_abs:,.2f}\n"
+                
+            # Add rebalance duration information
+            rebalance_granularity = 'day' if rebalance_duration['unit'] == 'day' else 'week'
+            report += f"\nRebalancing Plan ({rebalance_duration['value']} {rebalance_duration['unit']}s):\n"
+            report += f"---------------------------------------------\n"
+            for asset, amount in adjustments.items():
+                if amount == 0:
+                    continue
+                    
+                if rebalance_duration['unit'] == 'day':
+                    amount_per_granularity = amount / rebalance_duration['value']
+                else:
+                    amount_per_granularity = amount / rebalance_duration['value'] / (Decimal(365) / 7 / 12)
+                    
+                if asset == 'cash':
+                    action = "Save" if amount > 0 else "Spend" if amount < 0 else "No Change"
+                else:
+                    action = "Buy" if amount > 0 else "Sell" if amount < 0 else "No Change"
+                    
+                report += f"  {asset}: {action} {abs(amount_per_granularity):,.2f} per {rebalance_granularity}\n"
 
+            # Ask user for file location
+            from tkinter import filedialog
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+                initialfile="rebalancing_report.txt",
+                title="Save Rebalancing Report"
+            )
+            
+            if not file_path:  # User canceled the dialog
+                return
+                
             # Save to file
-            with open("rebalancing_report.txt", "w") as f:
+            with open(file_path, "w", encoding='utf-8') as f:
                 f.write(report)
 
-            messagebox.showinfo("Export Complete", "Report exported to rebalancing_report.txt")
+            messagebox.showinfo("Export Complete", f"Report exported to {file_path}")
 
         except Exception as e:
             messagebox.showerror("Export Error", f"Failed to export report: {str(e)}")

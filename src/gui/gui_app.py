@@ -18,6 +18,10 @@ class PortfolioRebalancerGUI:
         # Track window state
         self.window_state = self.root.state()
         self.root.bind("<Configure>", self.on_window_configure)
+        
+        # Add keyboard bindings for tab navigation
+        self.root.bind("<Control-Tab>", self.next_tab)
+        self.root.bind("<Control-Shift-Tab>", self.previous_tab)
 
         self.setup_ui()
 
@@ -36,6 +40,20 @@ class PortfolioRebalancerGUI:
 
         # Update the saved state
         self.window_state = current_state
+    
+    def next_tab(self, event=None):
+        """Switch to the next tab."""
+        current_tab = self.notebook.index(self.notebook.select())
+        next_tab = (current_tab + 1) % self.notebook.index("end")
+        self.notebook.select(next_tab)
+        return "break"  # Prevent default behavior
+        
+    def previous_tab(self, event=None):
+        """Switch to the previous tab."""
+        current_tab = self.notebook.index(self.notebook.select())
+        prev_tab = (current_tab - 1) % self.notebook.index("end")
+        self.notebook.select(prev_tab)
+        return "break"  # Prevent default behavior
 
     def refresh_current_tab(self, event=None, resize=False):
         """Refresh only the currently active tab."""

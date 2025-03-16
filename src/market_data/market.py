@@ -98,8 +98,8 @@ class Market:
         holdings = self.data['holdings']
         if symbol not in holdings:
             holdings[symbol] = self.init_data.copy()
-        update_at = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d').date()
-        if update_at < date.today() and symbol in market_fetcher and symbol not in self.update_delayed:
+        expired_time = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=9)
+        if expired_time < datetime.now() and symbol in market_fetcher and symbol not in self.update_delayed:
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
                 holdings[symbol]['kind'] = market_fetcher[symbol].kind
@@ -155,7 +155,8 @@ class Market:
         value = Decimal(value[1:])
         for currency, info in self.data['exchange_rate'].items():
             if info['symbol'] == currency_symbol:
-                if datetime.strptime(info['update_at'], '%Y-%m-%d').date() < date.today():
+                expired_time = datetime.strptime(info['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=9)
+                if expired_time < datetime.now():
                     info['rate'] = self.FX.get_exchange_rate(currency)
                     info['update_at'] = date.today().strftime('%Y-%m-%d')
                     self.update_market_data()
