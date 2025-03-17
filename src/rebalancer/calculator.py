@@ -13,11 +13,11 @@ class Calculator(ABC):
 	def calculate_adjustments(self, duration) -> dict[str, Decimal]:
 		pass
 
-def CreateCalculator(portfolio: Portfolio, method: str):
+def CreateCalculator(portfolio: Portfolio, method: str, *args, **kwargs):
 	"""Factory function to create a calculator instance based on the specified method."""
 	calculator_path = path.join(path.dirname(__file__), f'calculator.{method}.py')
 	spec = importlib.util.spec_from_file_location(f"calculator.{method}", calculator_path)
 	module = importlib.util.module_from_spec(spec)
 	spec.loader.exec_module(module)
 	StandardCalculator = module.StandardCalculator
-	return StandardCalculator(portfolio)
+	return StandardCalculator(portfolio, *args, **kwargs)

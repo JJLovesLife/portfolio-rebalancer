@@ -42,18 +42,49 @@ class Portfolio:
 					del allocation[merge_from]
 		return allocation
 
-	def target_percentages(self) -> dict[str, float]:
-		ret = self.portfolio_data['target_percentages']
+	def save_portfolio(self):
+		with open(self.portfolio_file, 'w', encoding='utf-8') as f:
+			simplejson.dump(self.portfolio_data, f, ensure_ascii=False, indent='\t')
+
+	def get_target_percentage_configurations(self) -> list[str]:
+		"""Get a list of all available target percentage configurations."""
+		return list(self.portfolio_data['target_percentages'].keys())
+	
+	def get_selected_target_percentage(self) -> str:
+		"""Get the name of the currently selected target percentage configuration."""
+		return self.portfolio_data['selected_target_percentage']
+	
+	def set_default_target_percentage(self, config_name: str) -> bool:
+		"""Set the specified configuration as the default."""
+		if config_name in self.portfolio_data['target_percentages']:
+			self.portfolio_data['selected_target_percentage'] = config_name
+			self.save_portfolio()
+			return True
+		return False
+	
+	def create_new_target_percentage(self, name: str, create_from: str) -> bool:
+		"""Create a new target percentage configuration."""
+		if name in self.portfolio_data['target_percentages'] or create_from not in self.portfolio_data['target_percentages']:
+			return False
+		
+		self.portfolio_data['target_percentages'][name] = self.portfolio_data['target_percentages'][create_from].copy()
+		self.portfolio_data['target_percentages'][name]['update_at'] = datetime.now().strftime('%Y-%m-%d')
+		self.save_portfolio()
+		return True
+
+	def target_percentages(self, selected: str = '') -> dict[str, float]:
+		if selected == '':
+			selected = self.portfolio_data['selected_target_percentage']
+		ret = self.portfolio_data['target_percentages'][selected].copy()
 		if 'update_at' in ret:
 			del ret['update_at']
 		return ret
 
-	def update_target_percentages(self, target_percentages: dict[str, Decimal]):
+	def update_target_percentages(self, target_percentages: dict[str, Decimal], selected: str = ''):
 		target_percentages = {k: normalize_fraction(v) for k, v in target_percentages.items() if v != 0}
-		self.portfolio_data['target_percentages'] = target_percentages
-		self.portfolio_data['target_percentages']['update_at'] = datetime.now().strftime('%Y-%m-%d')
-		with open(self.portfolio_file, 'w', encoding='utf-8') as f:
-			simplejson.dump(self.portfolio_data, f, ensure_ascii=False, indent='\t')
+		self.portfolio_data['target_percentages'][selected] = target_percentages
+		self.portfolio_data['target_percentages'][selected]['update_at'] = datetime.now().strftime('%Y-%m-%d')
+		self.save_portfolio()
 		return
 
 	def rebalance_parameters(self) -> dict[str, float]:

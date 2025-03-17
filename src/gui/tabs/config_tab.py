@@ -11,6 +11,7 @@ class ConfigurationTab:
         self.parent = parent
         self.portfolio = portfolio
         self.editing = False
+        self.current_target_name = self.portfolio.get_selected_target_percentage()
         self.create_tab()
 
     def create_tab(self):
@@ -22,7 +23,25 @@ class ConfigurationTab:
         right_frame = ttk.Frame(self.parent)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Add a frame for the treeview and button
+        # Add selection combo for different target percentages
+        target_frame = ttk.Frame(left_frame)
+        target_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+
+        ttk.Label(target_frame, text="Target Configuration:").pack(side=tk.LEFT, padx=5)
+
+        # Get available target percentage configurations
+        self.target_lists = self.portfolio.get_target_percentage_configurations()
+
+        self.target_combo = ttk.Combobox(target_frame, values=list(self.target_lists), state="readonly", width=30)
+        self.target_combo.pack(side=tk.LEFT, padx=5)
+        self.target_combo.current(self.target_lists.index(self.current_target_name))
+        self.target_combo.bind("<<ComboboxSelected>>", self.on_target_selected)
+
+        # Add button to create new target configuration
+        new_target_btn = ttk.Button(target_frame, text="New", width=5, command=self.create_new_target)
+        new_target_btn.pack(side=tk.LEFT, padx=2)
+
+        # Add frame for the treeview and button
         tree_container = ttk.Frame(left_frame)
         tree_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
@@ -83,8 +102,77 @@ class ConfigurationTab:
         save_btn = ttk.Button(btn_frame, text="Save Changes", command=self.save_target_allocations)
         save_btn.pack(side=tk.LEFT, padx=5)
 
+        # Set as default button
+        set_default_btn = ttk.Button(btn_frame, text="Set as Default", command=self.set_as_default)
+        set_default_btn.pack(side=tk.LEFT, padx=5)
+
         # Populate with data
         self.populate_data()
+
+    def on_target_selected(self, event):
+        """Handle selection of a different target configuration."""
+        self.current_target_name = self.target_combo.get()
+        self.populate_data()
+
+    def create_new_target(self):
+        """Open a dialog to create a new target configuration."""
+        popup = tk.Toplevel()
+        popup.title("Create New Target Configuration")
+        popup.geometry("300x120")
+        popup.transient(self.parent.winfo_toplevel())
+
+        # Center the popup
+        popup.geometry("+%d+%d" % (
+            self.parent.winfo_rootx() + self.parent.winfo_width() // 2 - 150,
+            self.parent.winfo_rooty() + self.parent.winfo_height() // 2 - 60
+        ))
+
+        # Name entry
+        ttk.Label(popup, text="Configuration Name:").pack(padx=10, pady=(10, 5))
+        name_entry = ttk.Entry(popup, width=30)
+        name_entry.pack(padx=10, pady=5)
+        name_entry.focus_set()
+
+        def save_new_config():
+            name = name_entry.get().strip()
+            if not name:
+                messagebox.showerror("Error", "Name cannot be empty")
+                return
+
+            if name in self.target_lists:
+                messagebox.showerror("Error", f"Configuration '{name}' already exists")
+                return
+
+            # Create a new configuration (initially empty)
+            success = self.portfolio.create_new_target_percentage(name, self.current_target_name)
+            if success:
+                self.target_lists = self.portfolio.get_target_percentage_configurations()
+                self.target_combo['values'] = self.target_lists
+                self.target_combo.current(self.target_lists.index(name))
+                self.current_target_name = name
+                self.populate_data()
+                popup.destroy()
+            else:
+                messagebox.showerror("Error", "Failed to create new configuration")
+
+        # Buttons
+        btn_frame = ttk.Frame(popup)
+        btn_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        ttk.Button(btn_frame, text="Create", command=save_new_config).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=popup.destroy).pack(side=tk.RIGHT, padx=5)
+
+        # Handle Enter key
+        popup.bind("<Return>", lambda event: save_new_config())
+        # Handle Escape key
+        popup.bind("<Escape>", lambda event: popup.destroy())
+
+    def set_as_default(self):
+        """Set the current target configuration as default."""
+        if self.portfolio.set_default_target_percentage(self.current_target_name):
+            messagebox.showinfo("Success", f"'{self.current_target_name}' set as default configuration")
+        else:
+            messagebox.showerror("Error", "Failed to set as default")
 
     def on_config_item_double_click(self, event):
         """Handle double-click on configuration item."""
@@ -169,8 +257,8 @@ class ConfigurationTab:
         for i in self.config_tree.get_children():
             self.config_tree.delete(i)
 
-        # Get target percentages
-        target_pcts = self.portfolio.target_percentages()
+        # Get target percentages for the currently selected configuration
+        target_pcts = self.portfolio.target_percentages(self.current_target_name)
 
         # Insert data into treeview
         for asset, percentage in target_pcts.items():
@@ -254,8 +342,8 @@ class ConfigurationTab:
                 messagebox.showerror("Invalid Allocation", f"Total allocation must be 100%. Current total: {total:.2f}%")
                 return
 
-            # Update portfolio targets
-            self.portfolio.update_target_percentages(new_targets)
+            # Update portfolio targets for the currently selected configuration
+            self.portfolio.update_target_percentages(new_targets, self.current_target_name)
 
             messagebox.showinfo("Success", "Target allocations updated successfully.")
 
@@ -360,3 +448,7 @@ class ConfigurationTab:
             'value': duration_value,
             'unit': duration_unit
         }
+
+    def get_selected_target_percentage(self):
+        """Get the currently selected target percentage configuration."""
+        return self.current_target_name

@@ -91,4 +91,4 @@ class PortfolioRebalancerGUI:
         # Create adjustments tab
         adjustments_frame = ttk.Frame(self.notebook)
         self.notebook.add(adjustments_frame, text="Rebalancing Adjustments")
-        self.adjustments_tab = AdjustmentsTab(adjustments_frame, self.portfolio, self.config_tab.get_rebalance_duration)
+        self.adjustments_tab = AdjustmentsTab(adjustments_frame, self.portfolio, self.config_tab.get_rebalance_duration, self.config_tab.get_selected_target_percentage)

@@ -5,11 +5,12 @@ from portfolio.portfolio import Portfolio
 from rebalancer.calculator import CreateCalculator
 
 class AdjustmentsTab:
-    def __init__(self, parent, portfolio: Portfolio, get_rebalance_duration):
+    def __init__(self, parent, portfolio: Portfolio, get_rebalance_duration, get_selected_target_percentage):
         """Initialize the adjustments tab."""
         self.parent = parent
         self.portfolio = portfolio
         self.get_rebalance_duration = get_rebalance_duration
+        self.get_selected_target_percentage = get_selected_target_percentage
         self.create_tab()
 
     def create_tab(self):
@@ -65,10 +66,11 @@ class AdjustmentsTab:
             return
 
         # Get adjustments data
-        adjustments = CreateCalculator(self.portfolio, 'standard').calculate_adjustments(rebalance_duration)
+        selected_target_percentage = self.get_selected_target_percentage()
+        adjustments = CreateCalculator(self.portfolio, 'standard', selected_target_percentage).calculate_adjustments(rebalance_duration)
 
         current_pcts = self.portfolio.current_allocation(merge=True)
-        target_pcts = self.portfolio.target_percentages()
+        target_pcts = self.portfolio.target_percentages(selected=selected_target_percentage)
 
         # Insert data into treeview
         for asset, amount in adjustments.items():
@@ -110,9 +112,10 @@ class AdjustmentsTab:
                 return
                 
             # Get adjustments using CreateCalculator like in refresh_view
-            adjustments = CreateCalculator(self.portfolio, 'standard').calculate_adjustments(rebalance_duration)
+            selected_target_percentage = self.get_selected_target_percentage()
+            adjustments = CreateCalculator(self.portfolio, 'standard', selected_target_percentage).calculate_adjustments(rebalance_duration)
             current_allocation = self.portfolio.current_allocation(merge=True)
-            target_percentages = self.portfolio.target_percentages()
+            target_percentages = self.portfolio.target_percentages(selected=selected_target_percentage)
             total_value = self.portfolio.total_value
 
             # Create a simple report
