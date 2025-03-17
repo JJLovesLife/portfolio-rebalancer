@@ -1,26 +1,38 @@
 {
-  "holdings": [
-    {
-      "symbol": "AAPL",
-      "share": 15000
-    },
-    {
-      "symbol": "GOOGL",
-      "share": 10000
-    },
-    {
-      "symbol": "TSLA",
-      "share": 5000
-    },
-    {
-      "symbol": "AMZN",
-      "share": 3000
-    }
-  ],
-  "target_percentages": {
-    "AAPL": 40,
-    "GOOGL": 30,
-    "TSLA": 20,
-    "AMZN": 10
-  }
+	"update_at": "0001-01-01",
+	"holdings": [
+		{
+			"symbol": "AAPL",
+			"share": 15000,
+			"update_at": "0001-01-01"
+		},
+		{
+			"symbol": "GOOGL",
+			"share": 10000,
+			"update_at": "0001-01-01"
+		},
+		{
+			"symbol": "TSLA",
+			"share": 5000,
+			"update_at": "0001-01-01"
+		},
+		{
+			"symbol": "AMZN",
+			"share": 3000,
+			"update_at": "0001-01-01"
+		}
+	],
+	"selected_target_percentage": "default",
+	"target_percentages": {
+		"default": {
+			"AAPL": 40,
+			"GOOGL": 30,
+			"TSLA": 20,
+			"AMZN": 10
+		}
+	},
+	"target_cash": 0,
+	"yearly_spending": 0,
+	"monthly_salary": 1,
+	"merge": {}
 }

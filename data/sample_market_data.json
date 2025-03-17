@@ -1,42 +1,47 @@
 {
-	"AAPL": {
-		"update_at": "2023-10-01",
-		"value": 1,
-		"kind": "sample",
-		"composition": {
-			"update_at": "2023-10-01",
-			"stock": 0.95,
-			"cash": 0.05
+	"holdings": {
+		"AAPL": {
+			"update_at": "0001-01-01",
+			"value": 1,
+			"kind": "sample",
+			"composition": {
+				"update_at": "0001-01-01",
+				"stock": 1
+			}
+		},
+		"GOOGL": {
+			"update_at": "0001-01-01",
+			"value": 1,
+			"kind": "sample",
+			"composition": {
+				"update_at": "0001-01-01",
+				"stock": 1
+			}
+		},
+		"TSLA": {
+			"update_at": "0001-01-01",
+			"value": 1,
+			"kind": "sample",
+			"composition": {
+				"update_at": "0001-01-01",
+				"stock": 1
+			}
+		},
+		"AMZN": {
+			"update_at": "0001-01-01",
+			"value": 1,
+			"kind": "sample",
+			"composition": {
+				"update_at": "0001-01-01",
+				"stock": 1
+			}
 		}
 	},
-	"GOOGL": {
-		"update_at": "2023-10-01",
-		"value": 1,
-		"kind": "sample",
-		"composition": {
-			"update_at": "2023-10-01",
-			"stock": 0.90,
-			"cash": 0.10
-		}
-	},
-	"TSLA": {
-		"update_at": "2023-10-01",
-		"value": 1,
-		"kind": "sample",
-		"composition": {
-			"update_at": "2023-10-01",
-			"stock": 0.85,
-			"cash": 0.15
-		}
-	},
-	"AMZN": {
-		"update_at": "2023-10-01",
-		"value": 1,
-		"kind": "sample",
-		"composition": {
-			"update_at": "2023-10-01",
-			"stock": 0.80,
-			"cash": 0.20
+	"exchange_rate": {
+		"USD" {
+			"symbol": "$",
+			"rate": 1,
+			"update_at": "0001-01-01"
 		}
 	}
 }
