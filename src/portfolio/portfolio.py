@@ -26,6 +26,32 @@ class Portfolio:
 	def get_holding(self, symbol: str) -> Holding | None:
 		return self.holdings_map.get(symbol, None)
 
+	def update_holdings(self, new_shares: dict[str, Decimal | int]) -> bool:
+		"""Update holdings based on the changes provided."""
+		for i, holding in enumerate(self.holdings):
+			if holding.symbol in new_shares:
+				new_share = new_shares[holding.symbol]
+				if isinstance(new_share, Decimal) or isinstance(new_share, float):
+					assert self.portfolio_data['holdings'][i]['symbol'] == holding.symbol, f"Symbol mismatch for {i}th holding"
+					assert self.portfolio_data['holdings'][i]['share'] == holding.share, f"Share mismatch for {holding.symbol}"
+					if new_share < 0:
+						self.logger.error(f"Invalid new share for {holding.symbol}: {new_share}")
+						return False
+					holding.update_share(new_share)
+					self.portfolio_data['holdings'][i]['share'] = holding.share
+				else:
+					self.logger.error(f"Invalid change type for {holding.symbol}: {type(new_share)}")
+					return False
+				del new_shares[holding.symbol]
+		if new_shares:
+			self.logger.error(f"Invalid shares provided: {new_shares}")
+			return False
+
+		# Recalculate total value before saving
+		self.total_value = sum(holding.value for holding in self.holdings)
+		self.save_portfolio()
+		return True
+
 	def current_allocation(self, merge: bool = False) -> dict[str, Decimal]:
 		allocation = {}
 		for holding in self.holdings:
@@ -43,6 +69,7 @@ class Portfolio:
 		return allocation
 
 	def save_portfolio(self):
+		"""Save portfolio data to the portfolio file."""
 		with open(self.portfolio_file, 'w', encoding='utf-8') as f:
 			simplejson.dump(self.portfolio_data, f, ensure_ascii=False, indent='\t')
 

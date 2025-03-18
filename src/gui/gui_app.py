@@ -4,6 +4,7 @@ from portfolio.portfolio import Portfolio
 from gui.tabs.allocation_tab import AllocationTab
 from gui.tabs.config_tab import ConfigurationTab
 from gui.tabs.adjustments_tab import AdjustmentsTab
+from gui.tabs.accounting_tab import AccountingTab
 
 class PortfolioRebalancerGUI:
     def __init__(self, root, portfolio: Portfolio):
@@ -59,11 +60,11 @@ class PortfolioRebalancerGUI:
         """Refresh only the currently active tab."""
         current_tab_index = self.notebook.index(self.notebook.select())
 
-        if current_tab_index == 0 and hasattr(self, 'allocation_tab'):  # Allocation tab
+        if current_tab_index == 1 and hasattr(self, 'allocation_tab'):  # Allocation tab
             self.root.after(75, self.allocation_tab.refresh_view)
-        elif current_tab_index == 1:  # Configuration tab
+        elif current_tab_index == 2:  # Configuration tab
             self.root.after(75, self.config_tab.refresh_view)
-        elif not resize and current_tab_index == 2:  # no need to refresh when size for Adjustments tab
+        elif not resize and current_tab_index == 3:  # no need to refresh when size for Adjustments tab
             self.adjustments_tab.refresh_view()
 
     def setup_ui(self):
@@ -74,6 +75,11 @@ class PortfolioRebalancerGUI:
 
         # Bind tab change event
         self.notebook.bind("<<NotebookTabChanged>>", self.refresh_current_tab)
+
+        # Create accounting tab
+        accounting_frame = ttk.Frame(self.notebook)
+        self.notebook.add(accounting_frame, text="Accounting")
+        self.accounting_tab = AccountingTab(accounting_frame, self.portfolio)
 
         # Create allocation tab
         allocation_frame = ttk.Frame(self.notebook)
