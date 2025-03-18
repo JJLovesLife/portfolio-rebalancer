@@ -27,6 +27,9 @@ python src/main.py
 ### Calculators
 The application requires a calculator implementation to function. Add a `calculator.*.py` file to the `src/rebalancer` directory. Extend the base class in `src/rebalancer/calculator.py` to implement your calculation algorithm for portfolio rebalancing.
 
+### Exchange Rate Handling
+The application requires a `FX.py` file in the `src/market_data` directory to handle currency exchange rates. If your portfolio doesn't involve foreign currencies, you can implement an empty version of this file that returns default values.
+
 ## Optional Components
 
 ### Market Data Sources
