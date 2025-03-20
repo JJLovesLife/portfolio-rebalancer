@@ -5,6 +5,7 @@ import simplejson
 from portfolio.holding import Holding
 from market_data.market import Market
 from decimal import Decimal
+import shutil
 
 class Portfolio:
 	def __init__(self, portfolio_file, market_data_path, logger):
@@ -69,9 +70,21 @@ class Portfolio:
 		return allocation
 
 	def save_portfolio(self):
-		"""Save portfolio data to the portfolio file."""
+		"""Save portfolio data to the portfolio file and create a history backup."""
+		# Create history directory if it doesn't exist
+		if not os.path.exists('.history'):
+			os.makedirs('.history')
+
+		# Save a copy to history with timestamp in filename
+		history_file_path = os.path.join('.history', f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{os.path.basename(self.portfolio_file)}")
+
+		# Copy the portfolio file to history
+		shutil.copyfile(self.portfolio_file, history_file_path)
+
+		# Save current portfolio data
 		with open(self.portfolio_file, 'w', encoding='utf-8') as f:
 			simplejson.dump(self.portfolio_data, f, ensure_ascii=False, indent='\t')
+		self.logger.info("Portfolio updated successfully.")
 
 	def get_target_percentage_configurations(self) -> list[str]:
 		"""Get a list of all available target percentage configurations."""

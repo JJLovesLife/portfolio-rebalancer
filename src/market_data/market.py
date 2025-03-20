@@ -51,7 +51,7 @@ class Market:
         # store back to file_path
         with open(self.file_path, 'w', encoding='utf-8') as f:
             simplejson.dump(data, f, ensure_ascii=False, indent='\t')
-        self.logger.info(f"Market data updated successfully.")
+        self.logger.info("Market data updated successfully.")
         time.sleep(1)
 
     def check(self):
