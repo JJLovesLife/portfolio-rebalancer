@@ -118,12 +118,18 @@ class Market:
 
                         composition_str = input(prompt)
                         composition = {}
-                        composition_str = composition_str.replace('=', ':')
-                        for asset in composition_str.split(';'):
-                            name, percentage = asset.split(':')
-                            composition[name] = Decimal(percentage)
-                        if sum(composition.values()) != 1:
-                            composition['cash'] = 1 - sum(composition.values())
+                        if composition_str:
+                            composition_str = composition_str.replace('=', ':')
+                            for asset in composition_str.split(';'):
+                                name, percentage = asset.split(':')
+                                composition[name] = Decimal(percentage)
+                            if sum(composition.values()) != 1:
+                                composition['cash'] = 1 - sum(composition.values())
+                        else:
+                            # no update
+                            composition = holdings[symbol]['composition'].copy()
+                            del composition['update_at']
+                            assert sum(composition.values()) == 1
                         holdings[symbol]['composition'] = composition
                         holdings[symbol]['composition']['update_at'] = date.today().strftime('%Y-%m-%d')
                 holdings[symbol]['update_at'] = date.today().strftime('%Y-%m-%d')
