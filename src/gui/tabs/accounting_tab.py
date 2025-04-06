@@ -9,6 +9,10 @@ class AccountingTab:
         self.parent = parent
         self.portfolio = portfolio
         self.pending_changes = {}  # Track pending share changes {symbol: new_share}
+
+        # Define colors for modified entries
+        self.modified_color = "#CC0000"  # Red color for modified values
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -80,8 +84,17 @@ class AccountingTab:
                 row=i, column=0, padx=5, pady=3, sticky="w"
             )
 
-            # Current Share
-            share_label = ttk.Label(self.scrollable_frame, text=f"{Decimal(current_share)}")
+            # Current Share - using a normal Label instead of ttk.Label for color and font support
+            share_label = tk.Label(
+                self.scrollable_frame, 
+                text=f"{Decimal(current_share)}",
+                anchor="e"
+            )
+
+            # Apply color and bold if this symbol has pending changes
+            if symbol in self.pending_changes:
+                share_label.config(fg=self.modified_color, font=('Arial', 10, 'bold'))
+
             share_label.grid(row=i, column=1, padx=5, pady=3, sticky="e")
             self.share_labels[symbol] = share_label
 
@@ -96,11 +109,15 @@ class AccountingTab:
             self.delta_entries[symbol] = delta_entry
 
             # Apply Button
-            ttk.Button(
+            apply_button = ttk.Button(
                 self.scrollable_frame, 
                 text="Apply", 
                 command=lambda sym=symbol: self.apply_change(sym)
-            ).grid(row=i, column=4, padx=5, pady=3)
+            )
+            apply_button.grid(row=i, column=4, padx=5, pady=3)
+
+            # Add Enter key binding for the Apply button
+            apply_button.bind("<Return>", lambda event, sym=symbol: self.apply_change(sym))
 
     def apply_change(self, symbol):
         """Apply the change for a specific holding but only store it temporarily."""
@@ -137,8 +154,12 @@ class AccountingTab:
             else:
                 return  # No changes to apply
 
-            # Update the displayed current share
-            self.share_labels[symbol].configure(text=f"{Decimal(self.pending_changes[symbol])}")
+            # Update the displayed current share with modified color and bold font
+            self.share_labels[symbol].configure(
+                text=f"{Decimal(self.pending_changes[symbol])}",
+                fg=self.modified_color,
+                font=('Arial', 10, 'bold')
+            )
 
         except ValueError:
             messagebox.showerror("Error", "Invalid number format")
@@ -147,9 +168,14 @@ class AccountingTab:
         """Save all pending changes to the portfolio."""
         try:
             pending_changes = self.pending_changes
-            self.pending_changes = {}
+            if not pending_changes:
+                messagebox.showinfo("Info", "No changes to save")
+                return
+
             if self.portfolio.update_holdings(pending_changes):
                 messagebox.showinfo("Success", "Portfolio changes saved successfully")
+                self.pending_changes = {}
+                self.refresh_view()
             else:
                 messagebox.showerror("Error", "Failed to update holdings")
         except Exception as e:
@@ -157,6 +183,10 @@ class AccountingTab:
 
     def reset_changes(self):
         """Reset all pending changes."""
+        if not self.pending_changes:
+            messagebox.showinfo("Info", "No changes to reset")
+            return
+
         self.pending_changes.clear()
         self.refresh_view()
         messagebox.showinfo("Info", "All pending changes have been reset")
