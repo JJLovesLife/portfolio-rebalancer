@@ -103,7 +103,10 @@ class Market:
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
                 holdings[symbol]['kind'] = market_fetcher[symbol].kind
-                holdings[symbol]['value'] = market_fetcher[symbol].fetch_current_value(self.logger)
+                (value, value_date) = market_fetcher[symbol].fetch_current_value(self.logger)
+                if value_date is not None and value_date < date.today():
+                    raise DelayedUpdateError("latest data is not available.")
+                holdings[symbol]['value'] = value
                 if market_fetcher[symbol].fixed_composition() is not None:
                     holdings[symbol]['composition'] = market_fetcher[symbol].fixed_composition()
                     holdings[symbol]['composition']['update_at'] = '0001-01-01'

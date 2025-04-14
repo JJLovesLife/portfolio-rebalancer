@@ -10,7 +10,7 @@ class Fetcher(ABC):
         self.kind = kind
 
     @abstractmethod
-    def fetch_current_value(self, logger) -> Decimal | str:
+    def fetch_current_value(self, logger) -> tuple[Decimal | str, date | None]:
         pass
 
     def fixed_composition(self) -> dict[str, Decimal] | None:
