@@ -138,7 +138,7 @@ class Market:
                 holdings[symbol]['update_at'] = date.today().strftime('%Y-%m-%d')
                 self.update_market_data()
             except DelayedUpdateError as e:
-                self.logger.info(f"Delayed update for {symbol}: {e}")
+                self.logger.warn(f"Delayed update for {symbol}: {e}")
                 self.update_delayed.add(symbol)
             except Exception as e:
                 self.logger.error(f"Failed to fetch data for {symbol}: {e}")
