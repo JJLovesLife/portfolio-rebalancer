@@ -98,7 +98,7 @@ class Market:
         holdings = self.data['holdings']
         if symbol not in holdings:
             holdings[symbol] = self.init_data.copy()
-        expired_time = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=9)
+        expired_time = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=15)
         if expired_time < datetime.now() and symbol in market_fetcher and symbol not in self.update_delayed:
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
@@ -113,11 +113,11 @@ class Market:
                 else:
                     composition_update_time = market_fetcher[symbol].fetch_composition_update_time(self.logger)
                     prev_update_time = datetime.strptime(holdings[symbol]['composition']['update_at'], '%Y-%m-%d').date()
-                    if composition_update_time > prev_update_time or prev_update_time < date.today() - timedelta(days=30):
+                    if composition_update_time > prev_update_time or prev_update_time < date.today() - timedelta(days=100):
                         if composition_update_time > prev_update_time:
                             prompt = 'The composition data has been updated. Please enter the new composition data: '
                         else:
-                            prompt = 'The composition data is older than 30 days. Please enter the new composition data: '
+                            prompt = 'The composition data is older than 100 days. Please enter the new composition data: '
 
                         composition_str = input(prompt)
                         composition = {}
