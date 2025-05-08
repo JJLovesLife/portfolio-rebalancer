@@ -98,13 +98,13 @@ class Market:
         holdings = self.data['holdings']
         if symbol not in holdings:
             holdings[symbol] = self.init_data.copy()
-        expired_time = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=15)
-        if expired_time < datetime.now() and symbol in market_fetcher and symbol not in self.update_delayed:
+        expired_time = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d').date()
+        if expired_time < market_fetcher[symbol].latest_value_date and symbol in market_fetcher and symbol not in self.update_delayed:
             self.logger.info(f"Fetching new data for {symbol}.")
             try:
                 holdings[symbol]['kind'] = market_fetcher[symbol].kind
                 (value, value_date) = market_fetcher[symbol].fetch_current_value(self.logger)
-                if value_date is not None and value_date < date.today():
+                if value_date is not None and value_date < market_fetcher[symbol].latest_value_date:
                     raise DelayedUpdateError("latest data is not available.")
                 holdings[symbol]['value'] = value
                 if market_fetcher[symbol].fixed_composition() is not None:
@@ -135,7 +135,7 @@ class Market:
                             assert sum(composition.values()) == 1
                         holdings[symbol]['composition'] = composition
                         holdings[symbol]['composition']['update_at'] = date.today().strftime('%Y-%m-%d')
-                holdings[symbol]['update_at'] = date.today().strftime('%Y-%m-%d')
+                holdings[symbol]['update_at'] = (value_date or date.today()).strftime('%Y-%m-%d')
                 self.update_market_data()
             except DelayedUpdateError as e:
                 self.logger.warn(f"Delayed update for {symbol}: {e}")
