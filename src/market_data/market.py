@@ -159,11 +159,9 @@ class Market:
         value = self.get_symbol(symbol)['value']
         if isinstance(value, Decimal) or isinstance(value, int):
             return value
-        # split first character, and left
-        currency_symbol = value[0]
-        value = Decimal(value[1:])
         for currency, info in self.data['exchange_rate'].items():
-            if info['symbol'] == currency_symbol:
+            if value.startswith(info['symbol']):
+                value = Decimal(value[len(info['symbol']):])
                 expired_time = datetime.strptime(info['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=9)
                 if expired_time < datetime.now():
                     info['rate'] = self.FX.get_exchange_rate(currency)
