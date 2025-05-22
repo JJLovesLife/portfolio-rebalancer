@@ -10,7 +10,7 @@ class Fetcher(ABC):
         }
         self.kind = kind
         match self.kind:
-            case 'US_STOCK':
+            case 'US_STOCK' | 'US_FUND':
                 self.latest_value_date = latest_us_trading_day
             case 'BTC':
                 self.latest_value_date = (datetime.now() + timedelta(hours=-15)).date()
