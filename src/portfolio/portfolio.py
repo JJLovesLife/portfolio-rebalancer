@@ -132,6 +132,7 @@ class Portfolio:
 			'monthly_salary': self.portfolio_data['monthly_salary'],
 			'yearly_spending': self.portfolio_data['yearly_spending'],
 			'target_cash': self.portfolio_data['target_cash'],
+			'locked_cash': self.portfolio_data['locked_cash'],
 		}
 
 def normalize_fraction(d: Decimal) -> Decimal:
