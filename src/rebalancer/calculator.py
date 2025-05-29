@@ -10,7 +10,7 @@ class Calculator(ABC):
 		self.portfolio = portfolio
 
 	@abstractmethod
-	def calculate_adjustments(self, duration) -> dict[str, Decimal]:
+	def calculate_adjustments(self, duration) -> dict[str, (Decimal, Decimal)]:
 		pass
 
 def CreateCalculator(portfolio: Portfolio, method: str, *args, **kwargs):
