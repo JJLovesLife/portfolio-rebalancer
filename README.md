@@ -16,7 +16,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Install browser automation dependencies
-playwright install --with-deps --no-shell
+playwright install --with-deps --no-shell chromium
 
 # Run the application
 python src/main.py
