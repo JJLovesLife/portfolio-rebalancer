@@ -127,7 +127,7 @@ class Market:
                                 name, percentage = asset.split(':')
                                 composition[name] = Decimal(percentage)
                             if sum(composition.values()) != 1:
-                                composition['cash'] = 1 - sum(composition.values())
+                                composition['cashPos'] = 1 - sum(composition.values())
                         else:
                             # no update
                             composition = holdings[symbol]['composition'].copy()

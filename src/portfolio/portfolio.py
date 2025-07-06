@@ -127,7 +127,7 @@ class Portfolio:
 		self.save_portfolio()
 		return
 
-	def rebalance_parameters(self) -> dict[str, float]:
+	def rebalance_parameters(self) -> dict[str, Decimal]:
 		return {
 			'monthly_salary': self.portfolio_data['monthly_salary'],
 			'yearly_spending': self.portfolio_data['yearly_spending'],
