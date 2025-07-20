@@ -16,19 +16,21 @@ class AdjustmentsTab:
     def create_tab(self):
         """Create the rebalancing adjustments tab."""
         # Create the treeview
-        self.adjustments_tree = ttk.Treeview(self.parent, columns=("Asset", "Current", "Target", "End", "Adjustment", "Action"), show="headings")
+        self.adjustments_tree = ttk.Treeview(self.parent, columns=("Asset", "Current", "Target", "End", "Adjustment", "AdjPct", "Action"), show="headings")
         self.adjustments_tree.heading("Asset", text="Asset")
         self.adjustments_tree.heading("Current", text="Current %")
         self.adjustments_tree.heading("Target", text="Target %")
         self.adjustments_tree.heading("End", text="End %")
         self.adjustments_tree.heading("Adjustment", text="Adjustment")
+        self.adjustments_tree.heading("AdjPct", text="Adjustment %")
         self.adjustments_tree.heading("Action", text="Action")
 
         self.adjustments_tree.column("Asset", width=80)
-        self.adjustments_tree.column("Current", width=80)
-        self.adjustments_tree.column("Target", width=80)
-        self.adjustments_tree.column("End", width=80)
+        self.adjustments_tree.column("Current", width=60)
+        self.adjustments_tree.column("Target", width=60)
+        self.adjustments_tree.column("End", width=60)
         self.adjustments_tree.column("Adjustment", width=100)
+        self.adjustments_tree.column("AdjPct", width=60)
         self.adjustments_tree.column("Action", width=150)
 
         scrollbar = ttk.Scrollbar(self.parent, orient=tk.VERTICAL, command=self.adjustments_tree.yview)
@@ -64,7 +66,7 @@ class AdjustmentsTab:
             valid_rebalance_duration = False
 
         if not valid_rebalance_duration:
-            self.adjustments_tree.insert("", tk.END, values=("Invalid Rebalance Duration", "", "", "", "", ""))
+            self.adjustments_tree.insert("", tk.END, values=("Invalid Rebalance Duration", "", "", "", "", "", ""))
             return
 
         # Get adjustments data
@@ -90,11 +92,12 @@ class AdjustmentsTab:
                 action = "Buy" if amount > 0 else "Sell" if amount < 0 else "No Change"
 
             self.adjustments_tree.insert("", tk.END, values=(
-                asset, 
-                f"{current_pct:.2f}%", 
-                f"{target_pct:.2f}%", 
-                f"{end_pct * 100:.2f}%", 
-                f"{amount:,.2f}", 
+                asset,
+                f"{current_pct:.2f}%",
+                f"{target_pct:.2f}%",
+                f"{end_pct * 100:.2f}%",
+                f"{amount:,.2f}",
+                f"{end_pct * 100 - current_pct:.2f}%",
                 f"{action} {abs(amount_per_granularity):,.2f} per {rebalance_granularity}"
             ))
 
