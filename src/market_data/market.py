@@ -162,10 +162,10 @@ class Market:
         for currency, info in self.data['exchange_rate'].items():
             if value.startswith(info['symbol']):
                 value = Decimal(value[len(info['symbol']):])
-                expired_time = datetime.strptime(info['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=9)
+                expired_time = datetime.strptime(info['update_at'], '%Y-%m-%d') + timedelta(days=1, hours=15)
                 if expired_time < datetime.now():
                     info['rate'] = self.FX.get_exchange_rate(currency)
-                    info['update_at'] = date.today().strftime('%Y-%m-%d')
+                    info['update_at'] = (datetime.now() + timedelta(hours=-15)).strftime('%Y-%m-%d')
                     self.update_market_data()
                 return value * info['rate']
         raise ValueError(f"Unsupported currency: {currency}")
