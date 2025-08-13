@@ -1,4 +1,4 @@
-/venv/
+/.venv/
 /portfolio_rebalancer.log
 __pycache__/
 portfolio.json
