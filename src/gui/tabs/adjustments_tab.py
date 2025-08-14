@@ -1,8 +1,11 @@
+from datetime import datetime
 from decimal import Decimal
+import re
 import tkinter as tk
 from tkinter import ttk, messagebox
 from portfolio.portfolio import Portfolio
 from rebalancer.calculator import CreateCalculator
+from itertools import chain
 
 class AdjustmentsTab:
     def __init__(self, parent, portfolio: Portfolio, get_rebalance_duration, get_selected_target_percentage):
@@ -126,27 +129,43 @@ class AdjustmentsTab:
 
             # Create a simple report
             report = "Portfolio Rebalancing Report\n"
-            report += "============================\n\n"
+            report += "============================\n"
 
-            report += "Current vs Target Allocation:\n"
-            report += "-----------------------------\n"
-            
+            report += f"Total Assets: {self.portfolio.total_value:>12.2f}\n"
+
             # Get all unique assets from both current and target allocations
             all_assets = set(list(current_allocation.keys()) + list(target_percentages.keys()))
-            
-            # Create formatted allocation comparison table
-            report += f"{'Asset':<15} {'Current Value':<15} {'Current %':<10} {'Target %':<10} {'Difference':<10}\n"
-            
-            for asset in sorted(all_assets):
+
+            for asset in chain(['alphabetical order'], sorted(all_assets), ['adjustment order'], adjustments.keys()):
+                if asset.endswith('order'):
+                    order = asset
+                    # Create formatted allocation comparison table
+                    report += f"\nCurrent vs Target Allocation ({order}):\n"
+                    report += f"--------------------------------{'-' * len(order)}\n"
+                    report += f"{'Asset':<15} {'Current Value':<15} {'Current %':<10} {'Target %':<10} {'End %':<10} {'Adjustment %':<12}\n"
+                    continue
+
                 current_value = current_allocation.get(asset, 0)
                 current_pct = current_value / total_value * 100 if total_value > 0 else 0
                 target_pct = target_percentages.get(asset, 0)
-                pct_diff = current_pct - target_pct
-                
-                report += f"{asset:<15} {current_value:,.2f}".ljust(31)
+
+                _, end_pct_decimal = adjustments[asset]
+                end_pct = end_pct_decimal * 100
+
+                adjustment_pct = end_pct - current_pct
+
+                def is_cjk(text):
+                    cjk_pattern = re.compile(r'[\u4E00-\u9FFF\u3400-\u4DBF\u3040-\u30FF\uAC00-\uD7AF]')
+                    return bool(cjk_pattern.search(text))
+
+                cjk_cnt = sum(is_cjk(char) for char in asset)
+                asset_padded = asset + ' ' * max(0, 15 - len(asset) - cjk_cnt)
+
+                report += f"{asset_padded} {current_value:,.2f}".ljust(31 - cjk_cnt)
                 report += f"{current_pct:.2f}%".ljust(11)
                 report += f"{target_pct:.2f}%".ljust(11)
-                report += f"{pct_diff:+.2f}%\n"
+                report += f"{end_pct:.2f}%".ljust(11)
+                report += f"{adjustment_pct:+.2f}%\n"
 
             report += "\nAdjustments Needed:\n"
             report += "------------------\n"
@@ -183,7 +202,7 @@ class AdjustmentsTab:
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".txt",
                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
-                initialfile="rebalancing_report.txt",
+                initialfile=datetime.now().strftime("%Y-%m-%d.txt"),
                 title="Save Rebalancing Report"
             )
             
