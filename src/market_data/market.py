@@ -8,6 +8,7 @@ import simplejson
 from market_data import market_fetcher
 from market_data.FX import ExchangeRate
 from market_data.delay_update import DelayedUpdateError
+from market_data.fetcher import MarketPriceFetcher
 
 class Market:
     def __init__(self, market_data_file_path, logger):
@@ -15,6 +16,7 @@ class Market:
         self.file_path = market_data_file_path
         self.FX = ExchangeRate(self.logger)
         self.update_delayed = set()
+        self.market_price_mode = False
 
         if not os.path.exists(self.file_path):
             self.logger.error(f"Market data file not found: {self.file_path}")
@@ -98,6 +100,13 @@ class Market:
         holdings = self.data['holdings']
         if symbol not in holdings:
             holdings[symbol] = self.init_data.copy()
+        if symbol not in market_fetcher:
+            if not hasattr(self, 'warned'):
+                self.warned = set()
+            if symbol not in self.warned:
+                self.warned.add(symbol)
+                self.logger.warning(f"{symbol} has no fetcher defined.")
+            return holdings[symbol]
         expired_time = datetime.strptime(holdings[symbol]['update_at'], '%Y-%m-%d').date()
         if expired_time < market_fetcher[symbol].latest_value_date and symbol in market_fetcher and symbol not in self.update_delayed:
             self.logger.info(f"Fetching new data for {symbol}.")
@@ -143,12 +152,6 @@ class Market:
             except Exception as e:
                 self.logger.error(f"Failed to fetch data for {symbol}: {e}")
                 raise
-        if symbol not in market_fetcher:
-            if not hasattr(self, 'warned'):
-                self.warned = set()
-            if symbol not in self.warned:
-                self.warned.add(symbol)
-                self.logger.warning(f"{symbol} has no fetcher defined.")
         return holdings[symbol]
 
     def iter_symbols(self):
@@ -157,6 +160,11 @@ class Market:
 
     def get_price(self, symbol: str) -> Decimal:
         value = self.get_symbol(symbol)['value']
+        if self.market_price_mode and isinstance(market_fetcher[symbol], MarketPriceFetcher):
+            try:
+                value = market_fetcher[symbol].fetch_current_market_price(self.logger)
+            except Exception as e:
+                self.logger.error(f"Failed to fetch market price for {symbol}: {e}")
         if isinstance(value, Decimal) or isinstance(value, int):
             return value
         for currency, info in self.data['exchange_rate'].items():

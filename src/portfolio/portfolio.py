@@ -19,7 +19,7 @@ class Portfolio:
 
 		with open(portfolio_file, 'r', encoding='utf-8') as f:
 			self.portfolio_data = json.load(f, parse_float=Decimal)
-			self.holdings = [Holding(market=self.market, **holding) for holding in self.portfolio_data['holdings']]
+		self.holdings = [Holding(market=self.market, **holding) for holding in self.portfolio_data['holdings']]
 		self.holdings_map = {holding.symbol: holding for holding in self.holdings}
 
 		self.total_value = sum(holding.value for holding in self.holdings)
@@ -52,6 +52,12 @@ class Portfolio:
 		self.total_value = sum(holding.value for holding in self.holdings)
 		self.save_portfolio()
 		return True
+
+	def toggle_market_price_mode(self):
+		self.market.market_price_mode = not self.market.market_price_mode
+		self.holdings = [Holding(market=self.market, **holding) for holding in self.portfolio_data['holdings']]
+		self.holdings_map = {holding.symbol: holding for holding in self.holdings}
+		self.total_value = sum(holding.value for holding in self.holdings)
 
 	def current_allocation(self, merge: bool = False) -> dict[str, Decimal]:
 		allocation = {}

@@ -12,7 +12,7 @@ class PortfolioRebalancerGUI:
         self.root = root
         self.portfolio = portfolio
 
-        self.root.title("Portfolio Rebalancer")
+        self.update_window_title()
         self.root.geometry("900x600")
         self.root.minsize(800, 500)
 
@@ -23,6 +23,7 @@ class PortfolioRebalancerGUI:
         # Add keyboard bindings for tab navigation
         self.root.bind("<Control-Tab>", self.next_tab)
         self.root.bind("<Control-Shift-Tab>", self.previous_tab)
+        self.root.bind("<Control-t>", self.toggle_market_price_mode)
 
         self.setup_ui()
 
@@ -67,6 +68,12 @@ class PortfolioRebalancerGUI:
         elif not resize and current_tab_index == 3:  # no need to refresh when size for Adjustments tab
             self.adjustments_tab.refresh_view()
 
+    def update_window_title(self):
+        title = "Portfolio Rebalancer"
+        if self.portfolio.market.market_price_mode:
+            title += " (Market Price)"
+        self.root.title(title)
+
     def setup_ui(self):
         """Set up the user interface."""
         # Create a notebook (tabbed interface)
@@ -98,3 +105,9 @@ class PortfolioRebalancerGUI:
         adjustments_frame = ttk.Frame(self.notebook)
         self.notebook.add(adjustments_frame, text="Rebalancing Adjustments")
         self.adjustments_tab = AdjustmentsTab(adjustments_frame, self.portfolio, self.config_tab.get_rebalance_duration, self.config_tab.get_selected_target_percentage)
+
+    def toggle_market_price_mode(self, event=None):
+        self.portfolio.toggle_market_price_mode()
+        self.update_window_title()
+        self.refresh_current_tab()
+        return "break"

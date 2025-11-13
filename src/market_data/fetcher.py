@@ -28,6 +28,13 @@ class Fetcher(ABC):
     def fetch_composition_update_time(self, logger) -> date:
         pass
 
+class MarketPriceFetcher(Fetcher):
+    def __init__(self, kind: str):
+        super().__init__(kind)
+
+    def fetch_current_market_price(self, logger) -> Decimal | str:
+        pass
+
 class ETF联接Fetcher(Fetcher):
     def __init__(self, kind: str, source_ETF: str):
         super().__init__(kind)
