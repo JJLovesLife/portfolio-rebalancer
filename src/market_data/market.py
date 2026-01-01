@@ -162,7 +162,8 @@ class Market:
         value = self.get_symbol(symbol)['value']
         if self.market_price_mode and isinstance(market_fetcher[symbol], MarketPriceFetcher):
             try:
-                value = market_fetcher[symbol].fetch_current_market_price(self.logger)
+                market_value = market_fetcher[symbol].fetch_current_market_price(self.logger)
+                value = market_value if market_value is not None else value
             except Exception as e:
                 self.logger.error(f"Failed to fetch market price for {symbol}: {e}")
         if isinstance(value, Decimal) or isinstance(value, int):
